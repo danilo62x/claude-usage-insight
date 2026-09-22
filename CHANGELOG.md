@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A Claude Code CLI installed inside WSL is now detected and listed automatically, instead of needing a `cli_command` entry
 - The application is now called **Claude Usage Insight**, and the executable `ClaudeUsageInsight.exe`. The old and the new build still exclude each other, so an account is never polled twice
-- The GitHub entry in the tray menu now opens this fork's repository
+- The GitHub entry in the tray menu now opens this fork's repository, and the version number in the popup's footer opens it too
 
 ### Removed
 

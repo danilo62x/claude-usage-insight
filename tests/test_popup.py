@@ -574,11 +574,11 @@ class TestInitConfig(unittest.TestCase):
     """Tests for _init_config - builds the JS init() config object."""
 
     def test_top_level_keys(self):
-        """Config has colors, t, app_version, the view options, and data."""
+        """Config has colors, t, the versions, the view options, and data."""
         config = _init_config(_snap())
         self.assertEqual(
             set(config.keys()),
-            {'colors', 't', 'app_version', 'compact_hide', 'compact', 'opacity', 'data'},
+            {'colors', 't', 'app_version', 'project_url', 'compact_hide', 'compact', 'opacity', 'data'},
         )
 
     @patch('usage_monitor_for_claude.popup.COMPACT_HIDE', ['account', 'seven_day_opus'])

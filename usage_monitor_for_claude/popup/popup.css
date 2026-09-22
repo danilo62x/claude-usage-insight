@@ -218,7 +218,12 @@ footer {
         white-space: nowrap;
     }
 
-    & > #appVersion { flex-shrink: 0; }
+    & > #appVersion {
+        flex-shrink: 0;
+        color: var(--fg-link);
+        text-decoration: underline;
+        cursor: pointer;
+    }
 
     &.error > #statusText { color: var(--bar-fg-warn); }
 }

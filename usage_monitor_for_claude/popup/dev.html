@@ -252,7 +252,7 @@ async function applyLanguage(code) {
     // Demo set so toggling the pin button previews compact hiding of both
     // whole sections and an individual usage bar.
     const compactHide = ['account', 'extra_usage', 'claude_code', 'status', 'seven_day_opus'];
-    win().init({ colors: COLORS, t: buildTranslations(currentLocale), app_version: '1.13.0', compact_hide: compactHide, data: resolveData(currentPreset, currentLocale) });
+    win().init({ colors: COLORS, t: buildTranslations(currentLocale), app_version: '1.13.0', project_url: 'https://github.com/danilo62x/claude-usage-insight', compact_hide: compactHide, data: resolveData(currentPreset, currentLocale) });
 }
 
 function loadPreset(name) {

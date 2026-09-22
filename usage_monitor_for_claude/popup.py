@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 import webview  # type: ignore[import-untyped]  # no type stubs available
 
 from . import __version__
-from .claude_cli import CHANGELOG_URL, find_installations
+from .claude_cli import CHANGELOG_URL, PROJECT_URL, find_installations
 from .formatting import divider_positions, elapsed_pct, expand_popup_fields, field_period, format_credits, popup_label, time_until
 from .i18n import T
 from .window_state import load as load_state, update as update_state
@@ -196,6 +196,7 @@ def _init_config(snap: CacheSnapshot, next_poll_time: float | None = None) -> di
             'duration_hm': T['duration_hm'], 'duration_m': T['duration_m'], 'duration_s': T['duration_s'],
         },
         'app_version': __version__,
+        'project_url': PROJECT_URL,
         'compact_hide': COMPACT_HIDE,
         'compact': bool(load_state().get('popup_compact', False)),
         'opacity': int(load_state().get('popup_opacity', 100)),
@@ -218,6 +219,9 @@ class _PopupApi:
 
     def open_url(self) -> None:
         webbrowser.open(CHANGELOG_URL)
+
+    def open_project(self) -> None:
+        webbrowser.open(PROJECT_URL)
 
     def set_pinned(self, pinned: bool) -> bool:
         return self._popup._set_pinned(pinned)

@@ -19,7 +19,7 @@ let lastData = null;
  * Called once by Python after the page loads.  Translations are set as
  * textContent on heading elements so the HTML file stays language-neutral.
  *
- * @param {object} config - { colors, t (translations), app_version, data (initial snapshot) }
+ * @param {object} config - { colors, t (translations), app_version, project_url, data (initial snapshot) }
  */
 function init(config) {
     const s = document.documentElement.style;
@@ -46,7 +46,12 @@ function init(config) {
     setupPinButton();
     setupPinnedDrag();
 
-    document.getElementById('appVersion').textContent = config.app_version;
+    const appVersion = document.getElementById('appVersion');
+    appVersion.textContent = config.app_version;
+    // The URL is the tooltip, so the entry needs no translation of its own and
+    // the user sees where the click goes before making it.
+    appVersion.title = config.project_url || '';
+    appVersion.addEventListener('click', () => pywebview.api.open_project());
 
     els = {
         accountSection: document.getElementById('accountSection'),
