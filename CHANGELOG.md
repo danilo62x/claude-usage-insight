@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+[Show all code changes](https://github.com/jens-duttke/usage-monitor-for-claude/compare/v1.23.0...HEAD)
+
+## [1.23.0] - 2026-09-22
+
 ### Added
 
 - The Extra Usage section in the detail popup now also shows the prepaid usage credits you have left to pay for it, so you can tell whether work can continue instead of only seeing what has been spent (thanks to [@TheConfax](https://github.com/TheConfax) for the contribution)
@@ -25,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The detail popup no longer shows a bar for quota types the API lists before they apply to your account - previously one appeared under an internal code name, stuck at 0%, with no countdown and no time marker. Event commands no longer receive variables for such a quota either, and the bar shows up on its own once the quota becomes active (thanks to [@TheConfax](https://github.com/TheConfax) for the contribution)
 - The `--verbose` diagnostics now redact your username from paths under a home directory that is reached through a symlink or a junction - previously those paths were printed in full, in the output you attach to a bug report (thanks to [@hybrid2102](https://github.com/hybrid2102) for the contribution)
 
-[Show all code changes](https://github.com/jens-duttke/usage-monitor-for-claude/compare/v1.22.0...HEAD)
+[Show all code changes](https://github.com/jens-duttke/usage-monitor-for-claude/compare/v1.22.0...v1.23.0)
 
 ## [1.22.0] - 2026-09-03
 
