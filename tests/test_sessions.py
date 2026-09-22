@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from usage_monitor_for_claude.sessions import queries, scanner
 
@@ -146,36 +147,53 @@ class TestQuotaWindow(_IndexFixture):
 
 
 class TestPanelGeometry(unittest.TestCase):
+    def _with_state(self, contents: str):
+        """Point the shared state file at a temporary one holding *contents*."""
+        from usage_monitor_for_claude import window_state
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        state = Path(tmp.name) / window_state.STATE_FILENAME
+        state.write_text(contents, encoding='utf-8')
+
+        patcher = patch.object(window_state, '_path', lambda: state)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return state
+
     def test_defaults_survive_a_corrupt_state_file(self) -> None:
         """A bad remembered size must never stop the panel from opening."""
         from usage_monitor_for_claude import panel
 
-        with tempfile.TemporaryDirectory() as tmp:
-            state = Path(tmp) / 'usage-monitor-panel.json'
-            state.write_text('{ not json', encoding='utf-8')
-            original = panel._state_path
-            panel._state_path = lambda: state  # type: ignore[assignment]
-            try:
-                self.assertEqual(panel.load_geometry()['width'], panel._DEFAULT_GEOMETRY['width'])
-            finally:
-                panel._state_path = original  # type: ignore[assignment]
+        self._with_state('{ not json')
+
+        self.assertEqual(panel.load_geometry()['width'], panel._DEFAULT_GEOMETRY['width'])
 
     def test_stored_size_is_clamped_to_the_minimum(self) -> None:
         """A window dragged smaller than usable must come back usable."""
         from usage_monitor_for_claude import panel
 
-        with tempfile.TemporaryDirectory() as tmp:
-            state = Path(tmp) / 'usage-monitor-panel.json'
-            state.write_text(json.dumps({'width': 10, 'height': 10, 'x': 5, 'y': 6}), encoding='utf-8')
-            original = panel._state_path
-            panel._state_path = lambda: state  # type: ignore[assignment]
-            try:
-                geometry = panel.load_geometry()
-                self.assertEqual(geometry['width'], panel._MIN_SIZE[0])
-                self.assertEqual(geometry['height'], panel._MIN_SIZE[1])
-                self.assertEqual((geometry['x'], geometry['y']), (5, 6))
-            finally:
-                panel._state_path = original  # type: ignore[assignment]
+        self._with_state(json.dumps(
+            {'panel_width': 10, 'panel_height': 10, 'panel_x': 5, 'panel_y': 6}))
+
+        geometry = panel.load_geometry()
+
+        self.assertEqual(geometry['width'], panel._MIN_SIZE[0])
+        self.assertEqual(geometry['height'], panel._MIN_SIZE[1])
+        self.assertEqual((geometry['x'], geometry['y']), (5, 6))
+
+    def test_state_writes_merge_instead_of_replacing(self) -> None:
+        """The popup and the panel write their own keys without losing each other's."""
+        from usage_monitor_for_claude import panel, window_state
+
+        state = self._with_state(json.dumps({'popup_opacity': 70}))
+
+        panel.save_geometry({'width': 900, 'height': 600, 'x': 1, 'y': 2})
+
+        stored = json.loads(state.read_text(encoding='utf-8'))
+        self.assertEqual(stored['popup_opacity'], 70)
+        self.assertEqual(stored['panel_width'], 900)
+        self.assertEqual(window_state.load()['panel_height'], 600)
 
     def test_reset_epoch_accepts_iso_and_numbers(self) -> None:
         from usage_monitor_for_claude.panel import _reset_epoch

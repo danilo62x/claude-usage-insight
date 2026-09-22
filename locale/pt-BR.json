@@ -120,5 +120,8 @@
     "panel_collapse": "Reduzir para as barras de uso",
     "panel_expand": "Aumentar",
     "panel_on_top": "Manter sobre as outras janelas",
-    "panel_opacity": "Opacidade"
+    "panel_opacity": "Opacidade",
+    "collapse_popup": "Mostrar só as barras de uso",
+    "expand_popup": "Mostrar tudo",
+    "popup_opacity": "Opacidade"
 }

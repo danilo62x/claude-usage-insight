@@ -120,5 +120,8 @@
     "panel_collapse": "Collapse to the usage bars",
     "panel_expand": "Expand",
     "panel_on_top": "Keep on top of other windows",
-    "panel_opacity": "Opacity"
+    "panel_opacity": "Opacity",
+    "collapse_popup": "Show only the usage bars",
+    "expand_popup": "Show everything",
+    "popup_opacity": "Opacity"
 }

@@ -4,6 +4,13 @@ let translations = {};
 let textTimerId = null;
 let popupPinned = false;
 let compactHide = [];
+let popupCompact = false;
+let popupOpacity = 100;
+
+// What the compact button hides when the user has not configured a list of
+// their own: everything except the usage bars, which are the reason to keep the
+// popup on screen at all.
+const DEFAULT_COMPACT_HIDE = ['account', 'extra_usage', 'claude_code'];
 let lastData = null;
 
 /**
@@ -22,6 +29,8 @@ function init(config) {
 
     translations = config.t;
     compactHide = config.compact_hide || [];
+    popupCompact = !!config.compact;
+    popupOpacity = typeof config.opacity === 'number' ? config.opacity : 100;
     document.getElementById('title').textContent = translations.title;
     document.getElementById('headingAccount').textContent = translations.account;
     document.getElementById('labelEmail').textContent = translations.email;
@@ -60,8 +69,55 @@ function init(config) {
         statusText: document.getElementById('statusText'),
     };
 
+    setupCompactButton();
+    setupOpacityRange();
+
     updateData(config.data);
     requestAnimationFrame(() => document.body.classList.add('open'));
+}
+
+function setupCompactButton() {
+    const compactBtn = document.getElementById('compactBtn');
+
+    function render() {
+        compactBtn.classList.toggle('pinned', popupCompact);
+        compactBtn.setAttribute('aria-pressed', popupCompact ? 'true' : 'false');
+        const label = popupCompact ? translations.expand_popup : translations.collapse_popup;
+        compactBtn.setAttribute('aria-label', label);
+        compactBtn.title = label;
+    }
+
+    compactBtn.addEventListener('click', () => {
+        popupCompact = !popupCompact;
+        render();
+        // Re-render first: hiding the sections changes the content height, and
+        // the ResizeObserver turns that into the window resize.
+        reapplyData();
+        pywebview.api.set_compact(popupCompact).catch(() => { /* keep the view */ });
+    });
+
+    render();
+}
+
+function setupOpacityRange() {
+    const range = document.getElementById('opacityRange');
+    let pending = null;
+
+    range.value = String(popupOpacity);
+    range.setAttribute('aria-label', translations.popup_opacity || 'Opacity');
+    range.title = translations.popup_opacity || 'Opacity';
+
+    // Only on release, and still debounced.  Applying per drag step floods the
+    // bridge with window calls that all marshal onto the UI thread, and the
+    // popup stops responding while it works through the queue.
+    function apply() {
+        clearTimeout(pending);
+        pending = setTimeout(() => {
+            pywebview.api.set_opacity(parseInt(range.value, 10)).catch(() => { /* keep the value */ });
+        }, 120);
+    }
+
+    range.addEventListener('change', apply);
 }
 
 function setupPinButton() {
@@ -102,6 +158,11 @@ function setupPinButton() {
  * status) or a usage field name (e.g. seven_day_opus).
  */
 function compactHidden(key) {
+    // The button hides on its own, falling back to a sensible list.  Pinning
+    // keeps the behaviour it always had: it hides only what compact_hide names.
+    if (popupCompact) {
+        return (compactHide.length ? compactHide : DEFAULT_COMPACT_HIDE).includes(key);
+    }
     return popupPinned && compactHide.includes(key);
 }
 
@@ -122,7 +183,7 @@ function setupPinnedDrag() {
     }
 
     header.addEventListener('mousedown', (event) => {
-        if (!popupPinned || event.button !== 0 || event.target.closest('button')) {
+        if (!popupPinned || event.button !== 0 || event.target.closest('button, input')) {
             return;
         }
         event.preventDefault();

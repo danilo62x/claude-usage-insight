@@ -21,8 +21,6 @@ var loaded = {};
 var STORE_THEME = 'panel.theme';
 var STORE_ORDER = 'panel.chartOrder';
 
-var windowMode = { compact: false, on_top: false, opacity: 1 };
-
 /* ---- formatting ---- */
 
 function fmtTokens(n) {
@@ -684,23 +682,8 @@ function refreshAll() {
     }).catch(function (err) { status(String(err), 'error'); });
 }
 
-function applyWindowMode() {
-    document.body.classList.toggle('compact', windowMode.compact);
-    document.getElementById('compactBtn').textContent = windowMode.compact ? '»' : '«';
-    document.getElementById('compactBtn').title = windowMode.compact
-        ? (S.panel_expand || 'Expand') : (S.panel_collapse || 'Collapse');
-    document.getElementById('floatBtn').classList.toggle('on', windowMode.on_top);
-    document.getElementById('opacity').value = String(Math.round(windowMode.opacity * 100));
-    return call('set_window_mode', windowMode.compact, windowMode.on_top, windowMode.opacity);
-}
-
 function init(config) {
     S = config.strings || {};
-    windowMode = {
-        compact: !!config.compact,
-        on_top: !!config.on_top,
-        opacity: typeof config.opacity === 'number' ? config.opacity : 1
-    };
 
     var stored = null;
     try { stored = localStorage.getItem(STORE_THEME); } catch (e) { /* private mode */ }
@@ -763,21 +746,6 @@ function init(config) {
     });
 
     document.getElementById('refreshBtn').addEventListener('click', refreshAll);
-    document.getElementById('compactBtn').addEventListener('click', function () {
-        windowMode.compact = !windowMode.compact;
-        applyWindowMode();
-    });
-    document.getElementById('floatBtn').addEventListener('click', function () {
-        windowMode.on_top = !windowMode.on_top;
-        applyWindowMode();
-    });
-    document.getElementById('opacity').addEventListener('input', function (e) {
-        windowMode.opacity = Math.max(0.25, Math.min(1, parseInt(e.target.value, 10) / 100));
-        applyWindowMode();
-    });
-
-    document.body.classList.toggle('compact', windowMode.compact);
-    applyWindowMode();
     document.getElementById('themeBtn').addEventListener('click', function () {
         applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
     });
@@ -796,11 +764,6 @@ function init(config) {
     setInterval(loadUsage, 60000);
 
     loadUsage();
-
-    if (windowMode.compact) {
-        showTab('sessions');
-        return;
-    }
 
     if (config.indexed) {
         showTab('sessions');

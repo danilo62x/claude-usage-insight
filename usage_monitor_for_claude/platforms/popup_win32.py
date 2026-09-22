@@ -17,7 +17,7 @@ import ctypes.wintypes
 import threading
 from typing import Any, Callable
 
-__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url', 'set_panel_opacity']
+__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url', 'set_window_opacity']
 
 # Extra ``webview.create_window`` options for this platform.  A non-resizable
 # window is what keeps the frameless popup from being dragged by its edges.
@@ -29,8 +29,8 @@ WINDOW_KWARGS = {'resizable': False, 'shadow': False}
 # turns that frame into a thin floating one without a taskbar button.
 PANEL_WINDOW_KWARGS = {'resizable': True, 'frameless': False, 'on_top': False}
 
-def set_panel_opacity(window: Any, alpha: float) -> bool:
-    """Make the panel translucent, so it can sit over another application.
+def set_window_opacity(window: Any, alpha: float) -> bool:
+    """Make a window translucent, so it can sit over another application.
 
     ``WS_EX_LAYERED`` has to be on the window before the alpha means anything;
     it is the same mechanism the popup uses to stay invisible while its height

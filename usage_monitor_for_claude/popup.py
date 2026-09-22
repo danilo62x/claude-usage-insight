@@ -25,7 +25,8 @@ from . import __version__
 from .claude_cli import CHANGELOG_URL, find_installations
 from .formatting import divider_positions, elapsed_pct, expand_popup_fields, field_period, format_credits, popup_label, time_until
 from .i18n import T
-from .platforms.popup import WINDOW_KWARGS, PopupHost, popup_url
+from .window_state import load as load_state, update as update_state
+from .platforms.popup import WINDOW_KWARGS, PopupHost, popup_url, set_window_opacity
 from .settings import BAR_BG, BAR_DIVIDER, BAR_FG, BAR_FG_WARN, BAR_MARKER, BG, COMPACT_HIDE, FG, FG_DIM, FG_HEADING, FG_LINK, POPUP_FIELDS
 
 _POPUP_DIR = Path(__file__).parent / 'popup'
@@ -188,12 +189,16 @@ def _init_config(snap: CacheSnapshot, next_poll_time: float | None = None) -> di
             'usage': T['usage'], 'extra_usage': T['extra_usage'],
             'claude_code': T['claude_code'], 'changelog': T['changelog'],
             'pin_popup': T['pin_popup'], 'unpin_popup': T['unpin_popup'],
+            'collapse_popup': T['collapse_popup'], 'expand_popup': T['expand_popup'],
+            'popup_opacity': T['popup_opacity'],
             'status_updated_s': T['status_updated_s'], 'status_updated': T['status_updated'],
             'status_next_update': T['status_next_update'], 'status_refreshing': T['status_refreshing'],
             'duration_hm': T['duration_hm'], 'duration_m': T['duration_m'], 'duration_s': T['duration_s'],
         },
         'app_version': __version__,
         'compact_hide': COMPACT_HIDE,
+        'compact': bool(load_state().get('popup_compact', False)),
+        'opacity': int(load_state().get('popup_opacity', 100)),
         'data': _snapshot_to_dict(snap, next_poll_time=next_poll_time),
     }
 
@@ -225,6 +230,14 @@ class _PopupApi:
 
     def end_drag(self) -> None:
         self._popup._end_drag()
+
+    def set_opacity(self, percent: int) -> None:
+        """Apply and remember the popup's opacity, given as 0-100."""
+        self._popup.set_opacity(int(percent))
+
+    def set_compact(self, compact: bool) -> bool:
+        """Remember the compact view toggle and report what was applied."""
+        return self._popup.set_compact(bool(compact))
 
     def report_height(self, height: int) -> None:
         """Called by JS ResizeObserver when content height changes."""
@@ -330,6 +343,11 @@ class UsagePopup:
 
             self._shown = True
             self._host.reveal()
+            # After reveal, never before: reveal drops the layered style the
+            # measuring trick used, which would take the alpha with it.
+            stored = int(load_state().get('popup_opacity', 100))
+            if stored < 100:
+                set_window_opacity(self._window, stored / 100)
             threading.Thread(target=self._update_loop, daemon=True).start()
 
     def _dismiss_watch(self) -> None:
@@ -354,6 +372,22 @@ class UsagePopup:
         except Exception:
             pass
         self._closed.set()
+
+    def set_opacity(self, percent: int) -> None:
+        """Apply *percent* opacity to the window and remember it."""
+        percent = max(25, min(100, int(percent)))
+        set_window_opacity(self._window, percent / 100)
+        update_state({'popup_opacity': percent})
+
+    def set_compact(self, compact: bool) -> bool:
+        """Remember the compact view toggle.
+
+        The window is not resized here: hiding the sections changes the
+        content height, and the ResizeObserver in popup.js reports that through
+        the height path the popup already uses for everything else.
+        """
+        update_state({'popup_compact': compact})
+        return compact
 
     def _set_pinned(self, pinned: bool) -> bool:
         """Apply the pin state and report what was applied.

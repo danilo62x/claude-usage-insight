@@ -74,6 +74,20 @@ header {
     flex-shrink: 0;
 }
 
+/* Narrow on purpose: the popup is 340px wide and the bars are what the space
+   is for.  The coarse step is also what keeps a drag from firing a window call
+   per pixel. */
+#opacityRange {
+    width: 52px;
+    height: 12px;
+    margin-right: 2px;
+    accent-color: var(--fg-dim);
+    background: transparent;
+    cursor: pointer;
+}
+
+#opacityRange:hover { accent-color: var(--fg); }
+
 section, footer {
     display: none;
     flex-direction: column;

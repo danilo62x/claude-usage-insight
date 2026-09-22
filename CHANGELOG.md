@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Charts can be reordered by dragging a card, and the order is remembered
 - A light theme for the session panel, switchable from its header
 - The session panel's quota bars now carry the same markings as the tray popup: the period's hour or day boundaries, and a marker showing how much of the period has elapsed. A bar turns red when usage is ahead of that marker, instead of at a fixed percentage
-- The session panel can collapse to just the usage bars, stay on top of other windows, and be made translucent - so it can sit over whatever you are working in
+- The detail popup can now be collapsed to just the usage bars with a button, and made translucent with a slider in its header - so, pinned, it can sit over whatever you are working in. Both are remembered between runs
 
 ### Changed
 

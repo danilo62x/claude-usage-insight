@@ -574,9 +574,12 @@ class TestInitConfig(unittest.TestCase):
     """Tests for _init_config - builds the JS init() config object."""
 
     def test_top_level_keys(self):
-        """Config has colors, t (translations), app_version, compact_hide, and data."""
+        """Config has colors, t, app_version, the view options, and data."""
         config = _init_config(_snap())
-        self.assertEqual(set(config.keys()), {'colors', 't', 'app_version', 'compact_hide', 'data'})
+        self.assertEqual(
+            set(config.keys()),
+            {'colors', 't', 'app_version', 'compact_hide', 'compact', 'opacity', 'data'},
+        )
 
     @patch('usage_monitor_for_claude.popup.COMPACT_HIDE', ['account', 'seven_day_opus'])
     def test_compact_hide_from_settings(self):
@@ -994,3 +997,50 @@ class TestUpdateLoopResilience(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # _tray_position
 # ---------------------------------------------------------------------------
+
+
+class TestPopupViewState(unittest.TestCase):
+    """Tests for the popup's remembered compact and opacity options."""
+
+    def _with_state(self, contents):
+        """Point the shared state file at a temporary one holding *contents*."""
+        import tempfile
+        from pathlib import Path as _Path
+
+        from usage_monitor_for_claude import window_state
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        state = _Path(tmp.name) / window_state.STATE_FILENAME
+        state.write_text(contents, encoding='utf-8')
+
+        patcher = patch.object(window_state, '_path', lambda: state)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return state
+
+    def test_stored_options_reach_the_page(self):
+        """init() receives what the user last chose, not the defaults."""
+        self._with_state('{"popup_compact": true, "popup_opacity": 55}')
+
+        config = _init_config(_snap())
+
+        self.assertIs(config['compact'], True)
+        self.assertEqual(config['opacity'], 55)
+
+    def test_defaults_when_nothing_was_stored(self):
+        """A first run is fully opaque and not collapsed."""
+        self._with_state('{}')
+
+        config = _init_config(_snap())
+
+        self.assertIs(config['compact'], False)
+        self.assertEqual(config['opacity'], 100)
+
+    def test_a_corrupt_state_does_not_break_the_popup(self):
+        """The popup must still open when the state file is unreadable."""
+        self._with_state('{ not json')
+
+        config = _init_config(_snap())
+
+        self.assertEqual(config['opacity'], 100)
