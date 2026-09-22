@@ -9,73 +9,85 @@
     <nav class="tabs" role="tablist">
         <button type="button" role="tab" class="tab active" data-tab="sessions" id="tabSessions"></button>
         <button type="button" role="tab" class="tab" data-tab="charts" id="tabCharts"></button>
+        <button type="button" role="tab" class="tab" data-tab="insights" id="tabInsights"></button>
         <button type="button" role="tab" class="tab" data-tab="quotas" id="tabQuotas"></button>
     </nav>
     <div class="header-right">
         <span id="status" class="status"></span>
-        <label class="range">
-            <select id="range"></select>
-        </label>
+        <select id="range" aria-label="range"></select>
+        <button type="button" id="themeBtn" class="ghost icon" title="theme">&#9681;</button>
         <button type="button" id="refreshBtn" class="ghost"></button>
     </div>
 </header>
 
-<main>
-    <!-- Sessions -->
-    <section id="panelSessions" class="panel" aria-labelledby="tabSessions">
-        <div class="table-wrap">
-            <table id="sessionsTable">
-                <thead>
-                    <tr>
-                        <th data-sort="weighted" class="num sorted" id="thWeighted"></th>
-                        <th data-sort="raw" class="num" id="thRaw"></th>
-                        <th data-sort="turns" class="num" id="thTurns"></th>
-                        <th data-sort="ctx_avg" class="num" id="thCtxAvg"></th>
-                        <th data-sort="ctx_peak" class="num" id="thCtxPeak"></th>
-                        <th data-sort="sub_weighted" class="num" id="thSub"></th>
-                        <th data-sort="first_ts" id="thWhen"></th>
-                        <th data-sort="project" id="thProject"></th>
-                        <th id="thTopic"></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <p class="empty" id="sessionsEmpty" hidden></p>
-        </div>
-    </section>
+<div class="body">
+    <main>
+        <section id="panelSessions" class="panel">
+            <div class="table-wrap">
+                <table id="sessionsTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="weighted" class="num sorted" id="thWeighted"></th>
+                            <th data-sort="raw" class="num" id="thRaw"></th>
+                            <th data-sort="turns" class="num" id="thTurns"></th>
+                            <th data-sort="ctx_avg" class="num" id="thCtxAvg"></th>
+                            <th data-sort="ctx_peak" class="num" id="thCtxPeak"></th>
+                            <th data-sort="sub_weighted" class="num" id="thSub"></th>
+                            <th data-sort="first_ts" id="thWhen"></th>
+                            <th data-sort="project" id="thProject"></th>
+                            <th id="thTopic"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p class="empty" id="sessionsEmpty" hidden></p>
+            </div>
+        </section>
 
-    <!-- Charts -->
-    <section id="panelCharts" class="panel" hidden aria-labelledby="tabCharts">
-        <div class="grid">
-            <figure class="card wide">
-                <figcaption id="capDaily"></figcaption>
-                <div class="canvas-box"><canvas id="chartDaily"></canvas></div>
-            </figure>
-            <figure class="card">
-                <figcaption id="capHourly"></figcaption>
-                <div class="canvas-box"><canvas id="chartHourly"></canvas></div>
-            </figure>
-            <figure class="card">
-                <figcaption id="capProject"></figcaption>
-                <div class="canvas-box"><canvas id="chartProject"></canvas></div>
-            </figure>
-            <figure class="card wide">
-                <figcaption>
-                    <span id="capCurve"></span>
-                    <select id="curveSession" class="inline-select"></select>
-                </figcaption>
-                <div class="canvas-box"><canvas id="chartCurve"></canvas></div>
-                <p class="hint" id="hintCurve"></p>
-            </figure>
-        </div>
-    </section>
+        <section id="panelCharts" class="panel" hidden>
+            <p class="hint" id="hintDrag"></p>
+            <div class="grid" id="chartGrid">
+                <figure class="card wide" draggable="true" data-chart="daily">
+                    <figcaption><span class="grip">&#8942;&#8942;</span><span id="capDaily"></span></figcaption>
+                    <div class="canvas-box"><canvas id="chartDaily"></canvas></div>
+                </figure>
+                <figure class="card" draggable="true" data-chart="hourly">
+                    <figcaption><span class="grip">&#8942;&#8942;</span><span id="capHourly"></span></figcaption>
+                    <div class="canvas-box"><canvas id="chartHourly"></canvas></div>
+                </figure>
+                <figure class="card" draggable="true" data-chart="project">
+                    <figcaption><span class="grip">&#8942;&#8942;</span><span id="capProject"></span></figcaption>
+                    <div class="canvas-box"><canvas id="chartProject"></canvas></div>
+                </figure>
+                <figure class="card wide" draggable="true" data-chart="curve">
+                    <figcaption>
+                        <span class="grip">&#8942;&#8942;</span><span id="capCurve"></span>
+                        <select id="curveSession" class="inline-select"></select>
+                    </figcaption>
+                    <div class="canvas-box"><canvas id="chartCurve"></canvas></div>
+                    <p class="hint" id="hintCurve"></p>
+                </figure>
+            </div>
+        </section>
 
-    <!-- Quotas -->
-    <section id="panelQuotas" class="panel" hidden aria-labelledby="tabQuotas">
-        <div id="quotaList"></div>
-        <p class="hint" id="hintQuota"></p>
-    </section>
-</main>
+        <section id="panelInsights" class="panel" hidden>
+            <p class="hint" id="hintInsights"></p>
+            <div id="insightTraits"></div>
+            <div class="grid" id="insightTables"></div>
+        </section>
+
+        <section id="panelQuotas" class="panel" hidden>
+            <div id="quotaList"></div>
+            <p class="hint" id="hintQuota"></p>
+        </section>
+    </main>
+
+    <aside id="usageBar">
+        <h2 id="usageHeading"></h2>
+        <div id="usageList"></div>
+        <div id="versionList" class="versions"></div>
+    </aside>
+</div>
 
 <footer>
     <span id="footVersion" class="dim"></span>

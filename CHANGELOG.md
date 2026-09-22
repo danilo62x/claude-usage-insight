@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A **session panel** in the tray menu, answering the question the quota bars cannot: which session spent the quota. It reads the Claude Code transcripts already on your machine and lists every session ranked by what it actually cost, with turn count, average and peak context, and the share that went to subagents
+- Charts in the session panel for daily usage by model, time of day and project, plus a cost-per-turn curve that shows the price of a turn climbing with the context behind it - and dropping back after a compaction
+- Each live quota window in the session panel is shown with the real percentage from the API together with the sessions that filled it, so the number and its cause sit side by side
+- The panel window is resizable and remembers its size and position between runs. It floats without a taskbar button, like the detail popup, and keeps the live quota bars in a sidebar next to the breakdown
+- A **Usage** tab in the session panel, describing your usage the way the CLI does: how much of your cost was spent at a large context, how much came from subagent-heavy sessions, how much from sessions left open for hours, plus the share per skill, per subagent type and per MCP server
+- Charts can be reordered by dragging a card, and the order is remembered
+- A light theme for the session panel, switchable from its header
+
+### Changed
+
+- A Claude Code CLI installed inside WSL is now detected and listed automatically, instead of needing a `cli_command` entry
+
 [Show all code changes](https://github.com/jens-duttke/usage-monitor-for-claude/compare/v1.23.0...HEAD)
 
 ## [1.23.0] - 2026-09-22

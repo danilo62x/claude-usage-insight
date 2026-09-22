@@ -25,12 +25,17 @@ from __future__ import annotations
 import threading
 from typing import Any, Callable
 
-__all__ = ['WINDOW_KWARGS', 'PopupHost', 'popup_url']
+__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url']
 
 # Extra ``webview.create_window`` options for this platform.  GTK ignores
 # ``resize()`` on a non-resizable window, so the content-driven height would
 # never be applied; a frameless window has no visible grips to drag anyway.
 WINDOW_KWARGS = {'resizable': True}
+
+# The session panel keeps its frame: the window manager's own border is what
+# makes it resizable and movable, and there is no taskbar-button style to fight
+# here - the skip-taskbar hint below covers it.
+PANEL_WINDOW_KWARGS = {'resizable': True, 'frameless': False, 'on_top': False}
 
 _MARGIN = 8
 
@@ -39,6 +44,29 @@ _WATCH_HEARTBEAT = 2.0
 
 # Escape, as reported by Gdk key events.
 _KEY_ESCAPE = 0xFF1B
+
+
+def apply_panel_window_style(window: Any) -> bool:
+    """Keep the panel out of the taskbar and the window switcher.
+
+    Both hints are advisory under GTK - a panel is free to ignore them - so the
+    return value says the hint was set, not that it was honoured.  A window that
+    keeps its taskbar entry is a cosmetic difference, never a reason to refuse
+    to open the panel.
+
+    Returns
+    -------
+    bool
+        True when the hints were set, False when GTK is unavailable or the
+        window has no GTK peer yet.
+    """
+    try:
+        gtk_window = window.native
+        gtk_window.set_skip_taskbar_hint(True)
+        gtk_window.set_skip_pager_hint(True)
+        return True
+    except Exception:
+        return False
 
 
 def popup_url(path: Any) -> str:

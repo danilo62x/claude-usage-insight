@@ -205,6 +205,109 @@ def cost_curve(conn: sqlite3.Connection, session_id: str, *, block: int = 25) ->
     return _rows(conn, sql, (session_id, block, block, block))
 
 
+def insights(conn: sqlite3.Connection, *, days: int = 7, tz_offset_minutes: int = 0) -> dict[str, Any]:
+    """Return the shares that explain where the weighted cost went.
+
+    Deliberately not a breakdown: the characteristics overlap, and a single
+    session can land in all three of them at once.  Each share answers "how
+    much of my cost came from turns that look like this", which is the form
+    that suggests a change in habit.
+
+    The tool shares are attributed to the turn that issued the call, so a skill
+    or an MCP server is credited with the prompt it was invoked in, not with
+    everything that followed it.
+    """
+    day = f"date({_local('t.timestamp', tz_offset_minutes)})"
+    since = f'-{days} days'
+
+    total_row = conn.execute(
+        f'SELECT SUM({_WEIGHTED}) FROM turns t WHERE t.timestamp IS NOT NULL AND {day} >= date("now", ?)',
+        (since,),
+    ).fetchone()
+    total = float(total_row[0] or 0)
+    if not total:
+        return {'days': days, 'total': 0}
+
+    def share(sql: str, args: tuple = ()) -> float:
+        value = conn.execute(sql, args).fetchone()[0] or 0
+        return round(100 * float(value) / total, 1)
+
+    # Turns whose prompt was already large.  Cache keeps a long conversation
+    # affordable, not cheap: the whole context is re-read on every turn.
+    big_context = share(
+        f'SELECT SUM({_WEIGHTED}) FROM turns t'
+        f' WHERE t.timestamp IS NOT NULL AND {day} >= date("now", ?) AND {_CONTEXT} > 150000',
+        (since,),
+    )
+
+    # Sessions where most of the cost was subagents rather than the conversation.
+    subagent_heavy = share(
+        f'''SELECT SUM(weighted) FROM (
+                SELECT t.session_id,
+                       SUM({_WEIGHTED}) AS weighted,
+                       SUM(CASE WHEN t.is_subagent THEN {_WEIGHTED} ELSE 0 END) AS sub
+                FROM turns t
+                WHERE t.timestamp IS NOT NULL AND {day} >= date("now", ?)
+                GROUP BY t.session_id
+            ) WHERE sub > weighted / 2''',
+        (since,),
+    )
+
+    # Sessions that stayed open for a working day or more - usually a loop or a
+    # background session nobody closed.
+    long_running = share(
+        f'''SELECT SUM(weighted) FROM (
+                SELECT t.session_id,
+                       SUM({_WEIGHTED}) AS weighted,
+                       (julianday(MAX(t.timestamp)) - julianday(MIN(t.timestamp))) * 24 AS hours
+                FROM turns t
+                WHERE t.timestamp IS NOT NULL AND {day} >= date("now", ?)
+                GROUP BY t.session_id
+            ) WHERE hours >= 8''',
+        (since,),
+    )
+
+    def table(sql: str) -> list[dict[str, Any]]:
+        rows = _rows(conn, sql, (since,))
+        for row in rows:
+            row['percent'] = round(100 * float(row.pop('weighted') or 0) / total, 1)
+        return [row for row in rows if row['percent'] >= 0.1]
+
+    skills = table(
+        f'SELECT t.tool_arg AS name, SUM({_WEIGHTED}) AS weighted FROM turns t'
+        f' WHERE t.tool_name = "Skill" AND t.tool_arg IS NOT NULL'
+        f' AND t.timestamp IS NOT NULL AND {day} >= date("now", ?)'
+        f' GROUP BY name ORDER BY weighted DESC LIMIT 12'
+    )
+
+    subagents = table(
+        f'SELECT COALESCE(a.agent_type, "?") AS name, SUM({_WEIGHTED}) AS weighted'
+        f' FROM turns t JOIN agents a ON a.agent_id = t.agent_id'
+        f' WHERE t.timestamp IS NOT NULL AND {day} >= date("now", ?)'
+        f' GROUP BY name ORDER BY weighted DESC LIMIT 12'
+    )
+
+    # Tool names are "mcp__<server>__<tool>"; the server is the middle segment.
+    mcp = table(
+        f'SELECT substr(t.tool_name, 6, instr(substr(t.tool_name, 6), "__") - 1) AS name,'
+        f' SUM({_WEIGHTED}) AS weighted FROM turns t'
+        f' WHERE t.tool_name LIKE "mcp!_!_%" ESCAPE "!"'
+        f' AND t.timestamp IS NOT NULL AND {day} >= date("now", ?)'
+        f' GROUP BY name ORDER BY weighted DESC LIMIT 12'
+    )
+
+    return {
+        'days': days,
+        'total': int(total),
+        'big_context': big_context,
+        'subagent_heavy': subagent_heavy,
+        'long_running': long_running,
+        'skills': skills,
+        'subagents': subagents,
+        'mcp': mcp,
+    }
+
+
 def quota_window(
     conn: sqlite3.Connection,
     *,

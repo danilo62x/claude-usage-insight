@@ -120,6 +120,7 @@ def init_db(conn):
     # Subagent attribution columns (added in a later schema version)
     _ensure_column(conn, "turns", "is_subagent", "INTEGER DEFAULT 0")
     _ensure_column(conn, "turns", "agent_id", "TEXT")
+    _ensure_column(conn, "turns", "tool_arg", "TEXT")  # [fork] skill name
     conn.execute("CREATE INDEX IF NOT EXISTS idx_turns_subagent ON turns(is_subagent)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_turns_agent_id ON turns(agent_id)")
     # Session topic (from custom-title / ai-title records; added in a later
@@ -265,7 +266,24 @@ def record_agent_id(record):
     return agent_id
 
 
-def extract_agent_dispatch(record):
+def result_tool_use_id(record):
+    """[fork] Return the tool_use_id a user record closes out, or None.
+
+    Pairs a tool_result with the assistant tool_use that issued it, which is
+    what links a dispatched subagent back to the type it was asked for.
+    """
+    tur = record.get("toolUseResult")
+    if isinstance(tur, dict) and tur.get("toolUseId"):
+        return tur["toolUseId"]
+    content = (record.get("message") or {}).get("content")
+    if isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "tool_result":
+                return item.get("tool_use_id")
+    return None
+
+
+def extract_agent_dispatch(record, dispatch_types=None):  # [fork] dispatch_types
     """Pull subagent identity from a parent's tool_result record.
 
     Claude Code writes a ``toolUseResult`` dict on the user-side record that
@@ -280,6 +298,11 @@ def extract_agent_dispatch(record):
         return None
     agent_id = tur.get("agentId")
     agent_type = tur.get("agentType")
+    # [fork] Current Claude Code builds write the agentId but not the
+    # agentType.  The type is on the dispatching tool_use instead
+    # (``subagent_type``), which the caller tracks by tool_use_id and passes in.
+    if not agent_type and dispatch_types is not None:
+        agent_type = dispatch_types.get(result_tool_use_id(record))
     if not agent_id or not agent_type:
         return None
     return {
@@ -330,6 +353,7 @@ def parse_jsonl_file(filepath):
     turns_no_id = []    # turns without a message_id (kept as-is)
     session_meta = {}   # session_id -> dict
     agents = {}         # agent_id -> dispatch dict
+    dispatch_types = {}  # [fork] tool_use_id -> subagent_type, from the Agent call
     line_count = 0
 
     try:
@@ -373,7 +397,7 @@ def parse_jsonl_file(filepath):
                     continue
 
                 if rtype == "user":
-                    dispatch = extract_agent_dispatch(record)
+                    dispatch = extract_agent_dispatch(record, dispatch_types)
                     if dispatch is not None:
                         agents[dispatch["agent_id"]] = dispatch
 
@@ -418,9 +442,21 @@ def parse_jsonl_file(filepath):
 
                     # Extract tool name from content if present
                     tool_name = None
+                    tool_arg = None  # [fork]
                     for item in msg.get("content", []):
                         if isinstance(item, dict) and item.get("type") == "tool_use":
                             tool_name = item.get("name")
+                            # [fork] The tool name alone says "Skill", not which
+                            # skill: that lives in the input.  The usage panel
+                            # reports per-skill share, so keep the argument.
+                            tool_input = item.get("input")
+                            if isinstance(tool_input, dict):
+                                if tool_name == "Skill":
+                                    tool_arg = tool_input.get("skill")
+                                elif tool_name in ("Agent", "Task"):
+                                    tool_arg = tool_input.get("subagent_type")
+                                    if tool_arg and item.get("id"):
+                                        dispatch_types[item["id"]] = tool_arg
                             break
 
                     if model:
@@ -435,6 +471,7 @@ def parse_jsonl_file(filepath):
                         "cache_read_tokens": cache_read,
                         "cache_creation_tokens": cache_creation,
                         "tool_name": tool_name,
+                        "tool_arg": tool_arg,  # [fork]
                         "cwd": cwd,
                         "message_id": message_id,
                         "is_subagent": 1 if is_subagent_record(record, filepath) else 0,
@@ -565,14 +602,14 @@ def insert_turns(conn, turns):
     conn.executemany("""
         INSERT OR IGNORE INTO turns
             (session_id, timestamp, model, input_tokens, output_tokens,
-             cache_read_tokens, cache_creation_tokens, tool_name, cwd, message_id,
-             is_subagent, agent_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             cache_read_tokens, cache_creation_tokens, tool_name, tool_arg, cwd,
+             message_id, is_subagent, agent_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, [
         (t["session_id"], t["timestamp"], t["model"],
          t["input_tokens"], t["output_tokens"],
          t["cache_read_tokens"], t["cache_creation_tokens"],
-         t["tool_name"], t["cwd"], t.get("message_id", ""),
+         t["tool_name"], t.get("tool_arg"), t["cwd"], t.get("message_id", ""),
          t.get("is_subagent", 0), t.get("agent_id"))
         for t in turns
     ])
@@ -658,6 +695,7 @@ def scan(projects_dir=None, projects_dirs=None, db_path=DB_PATH, verbose=True):
             turns_no_id = []
             new_session_metas = {}
             agents = {}         # agent_id -> dispatch dict
+            dispatch_types = {}  # [fork] tool_use_id -> subagent_type, from the Agent call
             line_count = 0
 
             try:
@@ -702,7 +740,7 @@ def scan(projects_dir=None, projects_dirs=None, db_path=DB_PATH, verbose=True):
                             continue
 
                         if rtype == "user":
-                            dispatch = extract_agent_dispatch(record)
+                            dispatch = extract_agent_dispatch(record, dispatch_types)
                             if dispatch is not None:
                                 agents[dispatch["agent_id"]] = dispatch
 
@@ -742,9 +780,20 @@ def scan(projects_dir=None, projects_dirs=None, db_path=DB_PATH, verbose=True):
                                 continue
 
                             tool_name = None
+                            tool_arg = None  # [fork]
                             for item in msg.get("content", []):
                                 if isinstance(item, dict) and item.get("type") == "tool_use":
                                     tool_name = item.get("name")
+                                    # [fork] see the full-parse path: the skill
+                                    # and the subagent type live in the input.
+                                    tool_input = item.get("input")
+                                    if isinstance(tool_input, dict):
+                                        if tool_name == "Skill":
+                                            tool_arg = tool_input.get("skill")
+                                        elif tool_name in ("Agent", "Task"):
+                                            tool_arg = tool_input.get("subagent_type")
+                                            if tool_arg and item.get("id"):
+                                                dispatch_types[item["id"]] = tool_arg
                                     break
 
                             if model:
@@ -759,6 +808,7 @@ def scan(projects_dir=None, projects_dirs=None, db_path=DB_PATH, verbose=True):
                                 "cache_read_tokens": cache_read,
                                 "cache_creation_tokens": cache_creation,
                                 "tool_name": tool_name,
+                                "tool_arg": tool_arg,  # [fork]
                                 "cwd": cwd,
                                 "message_id": message_id,
                                 "is_subagent": 1 if is_subagent_record(record, filepath) else 0,

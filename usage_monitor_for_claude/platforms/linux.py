@@ -28,13 +28,12 @@ from PIL import ImageFont
 from ..instance_id import config_dir_suffix, effective_config_dir, is_default_config_dir
 
 __all__ = [
-    'AUTOSTART_DIRECTORY', 'DIAGNOSTIC_PACKAGES', 'ask_yes_no', 'diagnostic_display_rows',
-    'autostart_supported', 'install_tray_click_handler', 'prepare_gui_environment', 'set_dpi_awareness',
-    'diagnostic_post_init_rows', 'diagnostic_runtime_rows', 'diagnostic_system_rows',
-    'double_click_seconds', 'get_idle_seconds', 'is_autostart_enabled',
-    'is_screensaver_running', 'is_workstation_locked', 'load_font', 'no_window_kwargs', 'register_notification_identity',
-    'set_autostart', 'setup_console', 'show_error_box', 'show_topmost_error', 'show_warning_box',
-    'sync_autostart_path', 'system_time_format', 'taskbar_uses_light_theme', 'watch_theme_change',
+    'ask_yes_no', 'AUTOSTART_DIRECTORY', 'autostart_supported', 'diagnostic_display_rows', 'DIAGNOSTIC_PACKAGES',
+    'diagnostic_post_init_rows', 'diagnostic_runtime_rows', 'diagnostic_system_rows', 'double_click_seconds', 'get_idle_seconds',
+    'install_tray_click_handler', 'is_autostart_enabled', 'is_screensaver_running', 'is_workstation_locked', 'load_font',
+    'no_window_kwargs', 'prepare_gui_environment', 'register_notification_identity', 'set_autostart', 'set_dpi_awareness',
+    'setup_console', 'show_error_box', 'show_topmost_error', 'show_warning_box', 'sync_autostart_path', 'system_time_format',
+    'taskbar_uses_light_theme', 'watch_theme_change', 'wsl_probe_command',
 ]
 
 # Third-party packages worth reporting in the diagnostics output.  pythonnet
@@ -72,6 +71,15 @@ _SYMBOL_FONTS = ('DejaVuSans.ttf', 'NotoSansSymbols2-Regular.ttf')
 # Cached proxies; a failed lookup is retried, an unavailable ``gi`` is not.
 _proxies: dict[tuple[tuple[str, str], str | None], Any] = {}
 _gi_available: bool | None = None
+
+
+def wsl_probe_command() -> list[str] | None:
+    """Return None - WSL is a Windows feature and has no Linux counterpart.
+
+    A Linux host reaches its Claude CLI as an ordinary file, which
+    ``find_installations`` already covers.
+    """
+    return None
 
 
 def no_window_kwargs() -> dict[str, Any]:

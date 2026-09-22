@@ -17,11 +17,42 @@ import ctypes.wintypes
 import threading
 from typing import Any, Callable
 
-__all__ = ['WINDOW_KWARGS', 'PopupHost', 'popup_url']
+__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url']
 
 # Extra ``webview.create_window`` options for this platform.  A non-resizable
 # window is what keeps the frameless popup from being dragged by its edges.
 WINDOW_KWARGS = {'resizable': False, 'shadow': False}
+
+# The session panel keeps its native frame, unlike the popup: a frameless window
+# on this host is not resizable (WinForms drops the sizing border with the
+# frame), and resizing it is the whole point.  ``WS_EX_TOOLWINDOW`` is what
+# turns that frame into a thin floating one without a taskbar button.
+PANEL_WINDOW_KWARGS = {'resizable': True, 'frameless': False, 'on_top': False}
+
+def apply_panel_window_style(window: Any) -> bool:
+    """Make *window* a floating tool window with no taskbar button.
+
+    WinForms sets ``WS_EX_APPWINDOW``, which forces a taskbar button even when
+    ``WS_EX_TOOLWINDOW`` is present, so both have to be changed together.  The
+    WinForms ``ShowInTaskbar`` property would do the same thing by recreating
+    the native handle, which crashes WebView2 when it happens off the UI thread.
+
+    Returns
+    -------
+    bool
+        True when the style was applied.  A failure is not worth refusing to
+        open the panel over - the window simply keeps its taskbar button.
+    """
+    try:
+        hwnd = window.native.Handle.ToInt32()
+        ex_style = ctypes.windll.user32.GetWindowLongW(hwnd, _GWL_EXSTYLE)
+        ctypes.windll.user32.SetWindowLongW(
+            hwnd, _GWL_EXSTYLE, (ex_style | _WS_EX_TOOLWINDOW) & ~_WS_EX_APPWINDOW,
+        )
+        return True
+    except Exception:
+        return False
+
 
 _BASELINE_DPI = 96
 _GWL_EXSTYLE = -20

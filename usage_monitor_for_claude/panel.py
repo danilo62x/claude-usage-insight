@@ -8,8 +8,9 @@ This is deliberately a *second* window rather than a bigger popup.  The tray
 popup is anchored to the tray icon, sized from its own content and dismissed as
 soon as it loses focus - all correct for a glance at the quota bars, all wrong
 for a panel you park on a second monitor and click around in.  The popup keeps
-its behaviour; this window is an ordinary resizable one that remembers where
-you left it.
+its behaviour; this window is a floating, resizable one with no taskbar button
+that remembers where you left it, with the live quota bars alongside the
+breakdown rather than in a separate place.
 
 Where the popup answers "how much of my quota is gone", this panel answers
 "what spent it", by joining the API's real percentages with the local
@@ -27,12 +28,13 @@ from typing import TYPE_CHECKING, Any
 import webview  # type: ignore[import-untyped]  # no type stubs available
 
 from . import __version__
+from .claude_cli import find_installations
 from .formatting import field_period, popup_label
 from .i18n import T
 from .instance_id import effective_config_dir
-from .platforms.popup import popup_url
+from .platforms.popup import PANEL_WINDOW_KWARGS, apply_panel_window_style, popup_url
 from .sessions import index, queries
-from .settings import BAR_FG, BAR_FG_WARN, BG, FG, FG_DIM, FG_HEADING, FG_LINK
+from .settings import BG
 
 _PANEL_DIR = Path(__file__).parent / 'panel'
 _STATE_FILENAME = 'usage-monitor-panel.json'
@@ -142,6 +144,41 @@ class _PanelApi:
         finally:
             conn.close()
 
+    def usage(self) -> dict[str, Any]:
+        """Return the live quota windows and the detected Claude installations.
+
+        Feeds the sidebar, which is the same data the tray popup shows: the
+        percentages come from the API and are never estimated here.
+        """
+        snapshot = self._panel.app.cache.snapshot
+        windows = []
+        for field, data in (snapshot.usage or {}).items():
+            if not isinstance(data, dict) or data.get('utilization') is None:
+                continue
+            period = field_period(field)
+            resets_at = _reset_epoch(data.get('resets_at'))
+            if not period or resets_at is None:
+                continue
+            windows.append({
+                'field': field,
+                'label': popup_label(field),
+                'utilization': float(data.get('utilization') or 0),
+                'resets_at': resets_at,
+                'hours': period / 3600,
+            })
+        windows.sort(key=lambda w: w['hours'])
+
+        versions = [{'name': i.name, 'version': i.version} for i in find_installations()]
+        return {'windows': windows, 'versions': versions}
+
+    def insights(self, days: int = 7, tz_offset_minutes: int = 0) -> dict[str, Any]:
+        """Return the shares that explain where the weighted cost went."""
+        conn = index.connect()
+        try:
+            return queries.insights(conn, days=days, tz_offset_minutes=tz_offset_minutes)
+        finally:
+            conn.close()
+
     def cost_curve(self, session_id: str, block: int = 25) -> list[dict[str, Any]]:
         """Return the per-turn cost curve for one session."""
         conn = index.connect()
@@ -214,11 +251,9 @@ class UsagePanel:
             'width': geometry['width'],
             'height': geometry['height'],
             'min_size': _MIN_SIZE,
-            'resizable': True,
-            'frameless': False,
-            'on_top': False,
             'background_color': BG,
             'js_api': _PanelApi(self),
+            **PANEL_WINDOW_KWARGS,
         }
         if geometry['x'] is not None and geometry['y'] is not None:
             kwargs['x'] = geometry['x']
@@ -242,15 +277,14 @@ class UsagePanel:
         threading.Thread(target=self._initialise, daemon=True).start()
 
     def _initialise(self) -> None:
-        """Push the theme and labels, then kick off the first index refresh."""
+        """Drop the taskbar button, then hand the labels to the page."""
+        apply_panel_window_style(self._window)
+
         config = {
             'version': __version__,
-            'colors': {
-                'bg': BG, 'fg': FG, 'fg_dim': FG_DIM, 'fg_heading': FG_HEADING,
-                'fg_link': FG_LINK, 'accent': BAR_FG, 'warn': BAR_FG_WARN,
-            },
             'strings': {key: T[key] for key in T if key.startswith('panel_')},
             'indexed': index.is_indexed(),
+            'theme': 'dark',
         }
         self._window.evaluate_js(f'init({json.dumps(config)})')
 

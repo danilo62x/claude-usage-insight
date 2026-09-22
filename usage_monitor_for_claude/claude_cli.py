@@ -15,7 +15,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .platforms import no_window_kwargs
+from .platforms import no_window_kwargs, wsl_probe_command
 from .settings import CLI_COMMAND
 
 
@@ -123,6 +123,16 @@ def find_installations() -> list[ClaudeInstallation]:
         version = cli_version(CLAUDE_CLI_PATH)
         if version:
             results.append(ClaudeInstallation('CLI', version, CLAUDE_CLI_PATH))
+
+    # WSL - auto-detected rather than configured, because it is the one install
+    # with no Windows path to stat.  A user-configured command for the same
+    # thing wins, so configuring it explicitly still overrides the probe.
+    if not any(_is_wsl_command(command) for command in CLI_COMMAND.values()):
+        probe = wsl_probe_command()
+        if probe:
+            version = _command_version(probe)
+            if version:
+                results.append(ClaudeInstallation('WSL', version, Path('wsl')))
 
     # Configured commands - listed in addition to the native CLI, which stays
     # visible because it is the install this app authenticates and refreshes with
@@ -235,6 +245,11 @@ def cli_version(path: Path) -> str:
         return version
     except Exception:
         return ''
+
+
+def _is_wsl_command(command: list[str]) -> bool:
+    """Return True when *command* already reaches a CLI through WSL."""
+    return bool(command) and Path(command[0]).name.lower() in ('wsl', 'wsl.exe')
 
 
 def _command_version(command: list[str]) -> str:

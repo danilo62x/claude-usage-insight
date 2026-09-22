@@ -64,7 +64,7 @@
     "status_refreshing": "Atualizando...",
     "already_running": "Usage Monitor for Claude v{running_version} já está em execução.\n\nDeseja substituir a instância em execução?",
     "replace_failed": "Não foi possível substituir a instância em execução.\n\nFeche-a manualmente e tente novamente.",
-    "panel_title": "Usage Monitor — Sessões",
+    "panel_title": "Usage Monitor - Sessões",
     "menu_panel": "Painel de sessões...",
     "panel_tab_sessions": "Sessões",
     "panel_tab_charts": "Gráficos",
@@ -103,5 +103,18 @@
     "panel_weighted": "ponderado",
     "panel_subagents": "sub",
     "panel_total": "total",
-    "panel_now": "agora"
+    "panel_now": "agora",
+    "panel_tab_insights": "Uso",
+    "panel_usage_heading": "Uso",
+    "panel_hint_drag": "Arraste um card pela alça para reordenar os gráficos. A ordem fica salva nesta máquina.",
+    "panel_hint_insights": "Aproximado, a partir das transcrições desta máquina - não inclui outros dispositivos nem o claude.ai. São características independentes do seu uso, não uma divisão: uma mesma sessão pode estar nas três.",
+    "panel_trait_context": "do seu custo foi gasto com contexto acima de 150k",
+    "panel_advice_context": "Sessão longa é mais barata por token graças ao cache, não barata: o contexto inteiro é relido a cada turno. Compacte no meio da tarefa e limpe ao trocar de assunto.",
+    "panel_trait_subagents": "do seu custo veio de sessões que foram quase só subagentes",
+    "panel_advice_subagents": "Cada subagente paga o próprio contexto do zero e não compartilha cache com a conversa que o criou. Dispare com critério e considere um modelo mais barato para os simples.",
+    "panel_trait_long": "do seu custo veio de sessões abertas por 8 horas ou mais",
+    "panel_advice_long": "Normalmente é um loop ou uma sessão de fundo que ninguém fechou. Uso contínuo soma em silêncio - confirme se é intencional.",
+    "panel_tbl_skills": "Skills",
+    "panel_tbl_subagents": "Subagentes",
+    "panel_tbl_mcp": "Servidores MCP"
 }

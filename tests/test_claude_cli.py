@@ -228,6 +228,19 @@ class TestCliVersion(unittest.TestCase):
 class TestFindInstallations(unittest.TestCase):
     """Tests for find_installations()."""
 
+    def setUp(self):
+        """Silence the WSL probe.
+
+        It shells out to the real ``wsl.exe`` when one is installed, so without
+        this every expectation below would depend on whether the machine
+        running the tests happens to have WSL - and on what it answers.
+        ``TestFindInstallationsWsl`` covers the probe itself.
+        """
+        patcher = patch('usage_monitor_for_claude.claude_cli.wsl_probe_command', return_value=None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        claude_cli._command_version_cache.clear()
+
     @patch('usage_monitor_for_claude.claude_cli.cli_version', return_value='')
     @patch('usage_monitor_for_claude.claude_cli.CLAUDE_CLI_PATH')
     @patch('usage_monitor_for_claude.claude_cli._EXTENSION_DIRS', [])
@@ -804,3 +817,61 @@ class TestRunCli(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestFindInstallationsWsl(unittest.TestCase):
+    """Tests for the auto-detected WSL installation."""
+
+    def setUp(self):
+        claude_cli._command_version_cache.clear()
+
+    @patch('usage_monitor_for_claude.claude_cli._EXTENSION_DIRS', [])
+    @patch('usage_monitor_for_claude.claude_cli.CLAUDE_CLI_PATH')
+    @patch('usage_monitor_for_claude.claude_cli.CLI_COMMAND', {})
+    @patch('usage_monitor_for_claude.claude_cli._command_version', return_value='2.1.245')
+    @patch('usage_monitor_for_claude.claude_cli.wsl_probe_command',
+           return_value=['wsl.exe', '--', 'bash', '-lc', 'claude --version'])
+    def test_wsl_is_listed_when_the_probe_answers(self, _probe, _version, mock_cli_path):
+        """A WSL CLI shows up without any configuration."""
+        mock_cli_path.is_file.return_value = False
+
+        result = find_installations()
+
+        self.assertEqual([(i.name, i.version) for i in result], [('WSL', '2.1.245')])
+
+    @patch('usage_monitor_for_claude.claude_cli._EXTENSION_DIRS', [])
+    @patch('usage_monitor_for_claude.claude_cli.CLAUDE_CLI_PATH')
+    @patch('usage_monitor_for_claude.claude_cli.CLI_COMMAND', {})
+    @patch('usage_monitor_for_claude.claude_cli._command_version', return_value='')
+    @patch('usage_monitor_for_claude.claude_cli.wsl_probe_command',
+           return_value=['wsl.exe', '--', 'bash', '-lc', 'claude --version'])
+    def test_no_entry_when_wsl_has_no_cli(self, _probe, _version, mock_cli_path):
+        """WSL installed without Claude Code inside must not produce a row."""
+        mock_cli_path.is_file.return_value = False
+
+        self.assertEqual(find_installations(), [])
+
+    @patch('usage_monitor_for_claude.claude_cli._EXTENSION_DIRS', [])
+    @patch('usage_monitor_for_claude.claude_cli.CLAUDE_CLI_PATH')
+    @patch('usage_monitor_for_claude.claude_cli.CLI_COMMAND',
+           {'My WSL': ['wsl', '-d', 'Ubuntu', 'claude']})
+    @patch('usage_monitor_for_claude.claude_cli._command_version', return_value='2.1.245')
+    @patch('usage_monitor_for_claude.claude_cli.wsl_probe_command',
+           return_value=['wsl.exe', '--', 'bash', '-lc', 'claude --version'])
+    def test_configured_wsl_command_wins(self, _probe, _version, mock_cli_path):
+        """A user-configured WSL command suppresses the probe, not both entries."""
+        mock_cli_path.is_file.return_value = False
+
+        result = find_installations()
+
+        self.assertEqual([i.name for i in result], ['My WSL'])
+
+    @patch('usage_monitor_for_claude.claude_cli._EXTENSION_DIRS', [])
+    @patch('usage_monitor_for_claude.claude_cli.CLAUDE_CLI_PATH')
+    @patch('usage_monitor_for_claude.claude_cli.CLI_COMMAND', {})
+    @patch('usage_monitor_for_claude.claude_cli.wsl_probe_command', return_value=None)
+    def test_no_probe_on_a_host_without_wsl(self, _probe, mock_cli_path):
+        """A Linux host, or a Windows one without WSL, simply has no row."""
+        mock_cli_path.is_file.return_value = False
+
+        self.assertEqual(find_installations(), [])

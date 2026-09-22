@@ -28,11 +28,22 @@ The application reads your existing Claude OAuth token from the local Claude CLI
 
 ## Local Storage
 
-All usage data is kept in memory only and discarded when the application closes. An optional
-settings file (`usage-monitor-settings.json`) is read-only. The complete list of what the
-application changes on your system follows - there is nothing else.
+Usage data from the API is kept in memory only and discarded when the application closes. An
+optional settings file (`usage-monitor-settings.json`) is read-only. The session panel is the one
+feature that stores anything, and only once you open it. The complete list of what the application
+changes on your system follows - there is nothing else.
 
-**On Windows** no files are written at all. Two values are written to the registry, both under
+**On both systems** the session panel writes two files next to your Claude configuration, and only
+after you open it from the tray menu:
+
+- `<Claude config>/usage-monitor-sessions.db` - an index of your local Claude Code transcripts
+  (`<Claude config>/projects`), used for the session table and the charts. It holds token counts,
+  timestamps, project names, session topics and tool names taken from those transcripts. It never
+  holds message content, and nothing in it is sent anywhere - it is a local cache you can delete at
+  any time; the panel rebuilds it on the next open.
+- `<Claude config>/usage-monitor-panel.json` - the panel window's size and position.
+
+**On Windows** no other files are written. Two values are written to the registry, both under
 `HKEY_CURRENT_USER`:
 
 - `Software\Classes\AppUserModelId\JensDuttke.UsageMonitorForClaude` - the display name and icon

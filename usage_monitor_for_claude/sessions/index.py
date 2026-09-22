@@ -58,6 +58,30 @@ def connect() -> sqlite3.Connection:
     return conn
 
 
+def _rebuild_if_schema_grew() -> None:
+    """Force one full re-read when a column the panel needs was just added.
+
+    An incremental scan skips files whose mtime is unchanged, and the turn rows
+    it already wrote are protected by a unique index, so a new column would stay
+    null for the entire history.  Clearing the derived tables costs one full
+    pass (seconds) and nothing else: everything in them is rebuilt from the
+    transcripts.
+    """
+    marker = 'fork_tool_arg_rebuilt'
+    conn = connect()
+    try:
+        if scanner._meta_get(conn, marker):
+            return
+        conn.execute('DELETE FROM turns')
+        conn.execute('DELETE FROM processed_files')
+        scanner._meta_set(conn, marker, '1')
+        conn.commit()
+    except sqlite3.Error:
+        return
+    finally:
+        conn.close()
+
+
 def refresh(*, min_interval: float = 0.0) -> dict[str, Any]:
     """Bring the index up to date with the transcripts on disk.
 
@@ -84,6 +108,7 @@ def refresh(*, min_interval: float = 0.0) -> dict[str, Any]:
             return {'elapsed': 0.0, 'skipped': True}
         started = time.time()
         try:
+            _rebuild_if_schema_grew()
             dirs = [d for d in projects_dirs() if d.is_dir()]
             scanner.scan(projects_dirs=dirs, db_path=db_path(), verbose=False)
         except Exception as exc:  # noqa: BLE001 - surfaced to the panel, never fatal

@@ -13,6 +13,7 @@ import functools
 import msvcrt
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import threading
@@ -25,14 +26,12 @@ from PIL import ImageFont
 from ..instance_id import config_dir_suffix, effective_config_dir, is_default_config_dir
 
 __all__ = [
-    'AUTOSTART_REG_BASE_NAME', 'AUTOSTART_REG_KEY', 'DIAGNOSTIC_PACKAGES', 'ask_yes_no',
-    'autostart_supported', 'install_tray_click_handler', 'prepare_gui_environment', 'set_dpi_awareness',
-    'diagnostic_display_rows', 'diagnostic_post_init_rows', 'diagnostic_runtime_rows',
-    'diagnostic_system_rows', 'double_click_seconds', 'get_idle_seconds',
-    'is_autostart_enabled', 'is_screensaver_running', 'is_workstation_locked', 'load_font', 'no_window_kwargs',
-    'register_notification_identity', 'set_autostart', 'show_error_box', 'show_warning_box',
-    'setup_console', 'show_topmost_error', 'sync_autostart_path', 'system_time_format',
-    'taskbar_uses_light_theme', 'watch_theme_change',
+    'ask_yes_no', 'AUTOSTART_REG_BASE_NAME', 'AUTOSTART_REG_KEY', 'autostart_supported', 'diagnostic_display_rows',
+    'DIAGNOSTIC_PACKAGES', 'diagnostic_post_init_rows', 'diagnostic_runtime_rows', 'diagnostic_system_rows',
+    'double_click_seconds', 'get_idle_seconds', 'install_tray_click_handler', 'is_autostart_enabled', 'is_screensaver_running',
+    'is_workstation_locked', 'load_font', 'no_window_kwargs', 'prepare_gui_environment', 'register_notification_identity',
+    'set_autostart', 'set_dpi_awareness', 'setup_console', 'show_error_box', 'show_topmost_error', 'show_warning_box',
+    'sync_autostart_path', 'system_time_format', 'taskbar_uses_light_theme', 'watch_theme_change', 'wsl_probe_command',
 ]
 
 # Third-party packages worth reporting in the diagnostics output.
@@ -95,6 +94,32 @@ class _LASTINPUTINFO(ctypes.Structure):
         ('cbSize', ctypes.wintypes.UINT),
         ('dwTime', ctypes.wintypes.DWORD),
     ]
+
+
+def wsl_probe_command() -> list[str] | None:
+    """Return the command that asks a WSL Claude CLI for its version.
+
+    WSL is the one Claude install this app cannot see as a file: it lives on
+    the Linux filesystem with its own credentials, and no Windows path maps to
+    it reliably.  Probing through ``wsl.exe`` is what makes it show up in the
+    version list without the user configuring ``cli_command`` by hand.
+
+    It has to go through a login shell: the CLI is installed per user (under
+    ``~/.local/bin`` or a node version manager), and ``wsl -e`` starts with a
+    minimal PATH that does not contain it.  A profile that prints a banner is
+    harmless because the caller parses the version out of the output rather
+    than reading the whole stream as one.
+
+    Returns
+    -------
+    list[str] or None
+        None when ``wsl.exe`` is not installed, which is also what a machine
+        without WSL looks like.
+    """
+    wsl = shutil.which('wsl.exe')
+    if not wsl:
+        return None
+    return [wsl, '--', 'bash', '-lc', 'claude --version']
 
 
 def no_window_kwargs() -> dict[str, Any]:

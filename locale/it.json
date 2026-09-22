@@ -103,5 +103,18 @@
     "panel_weighted": "weighted",
     "panel_subagents": "sub",
     "panel_total": "total",
-    "panel_now": "now"
+    "panel_now": "now",
+    "panel_tab_insights": "Usage",
+    "panel_usage_heading": "Usage",
+    "panel_hint_drag": "Drag a card by its handle to reorder the charts. The order is remembered on this machine.",
+    "panel_hint_insights": "Approximate, from the transcripts on this machine - it does not include other devices or claude.ai. These are independent characteristics of your usage, not a breakdown: one session can be all three.",
+    "panel_trait_context": "of your cost was spent at a context above 150k",
+    "panel_advice_context": "A long session is cheaper per token thanks to the cache, not cheap: the whole context is re-read every turn. Compact mid-task, clear when you switch to a new one.",
+    "panel_trait_subagents": "of your cost came from sessions that were mostly subagents",
+    "panel_advice_subagents": "Each subagent pays for its own context from scratch and shares no cache with the conversation that spawned it. Spawn them deliberately, and consider a cheaper model for the simple ones.",
+    "panel_trait_long": "of your cost came from sessions open for 8 hours or more",
+    "panel_advice_long": "Usually a loop or a background session nobody closed. Continuous usage adds up quietly - make sure it is intentional.",
+    "panel_tbl_skills": "Skills",
+    "panel_tbl_subagents": "Subagents",
+    "panel_tbl_mcp": "MCP servers"
 }
