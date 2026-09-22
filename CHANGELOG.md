@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Polling no longer stops while the computer is idle or locked - it continues on a 15-minute cadence, configurable via the new [`idle_interval`](docs/configuration.md#polling-intervals) setting. Quota resets, threshold alerts and event commands now fire on time on an unattended computer, and switching your Claude account is picked up right away instead of at your next keystroke
 - The expired-session and missing-token messages now name the Claude Code CLI and the command that fixes it (`claude auth login`) - previously they asked you to open Claude Code, which helps nobody whose Claude Code is already open and whose CLI login is the part that expired (thanks to [@mjtlsnelling-art](https://github.com/mjtlsnelling-art) for reporting [#89](https://github.com/jens-duttke/usage-monitor-for-claude/issues/89))
 - Event commands no longer report a quota as being at 0% when the API does not report its usage at all - the `USAGE_MONITOR_UTILIZATION_*` and `USAGE_MONITOR_RESETS_AT_*` pair is left out for that quota instead of carrying a zero
+- `UsageMonitorForClaude.exe` is now code signed, so Windows names the publisher instead of reporting an unknown one, and the *Digital Signatures* tab gives you a second way to check a download besides the published SHA256. Antivirus warnings can still happen - they react to how the EXE is packaged, not to the signature
 
 ### Fixed
 

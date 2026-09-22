@@ -44,7 +44,7 @@ Run the suite once more, now against the bumped tree. Some tests assert the vers
 
 **Build it here** - never release an artifact you did not just produce. A `dist/UsageMonitorForClaude.exe` left over from an earlier run carries the previous version, or the right version built from a tree that has since changed, and nothing about the file says so.
 
-1. `python build.py` (virtual environment activated).
+1. `python build.py` (virtual environment activated). **The run blocks partway through: the signing token asks for its PIN.** Tell the user before starting it and give the command a generous timeout - the wait otherwise reads as a hung build. A failed or unverifiable signature stops the build on its own, so a build that finishes is a signed build.
 2. **Verify the version came from this build:** read it back out of the artifact and compare against the release version - this is the check that catches a stale EXE:
    ```powershell
    (Get-Item dist\UsageMonitorForClaude.exe).VersionInfo | Select-Object FileVersion, ProductVersion

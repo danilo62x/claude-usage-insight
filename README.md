@@ -52,7 +52,7 @@ This tool handles your Claude Code OAuth token, so you should be able to verify 
 
 A few scanners flag `UsageMonitorForClaude.exe` as a trojan, and Chrome may cancel the download with "Virus found". This is a false positive. Every new release tends to be flagged for a while after publication.
 
-**Check that you have the authentic file.** Each release lists the SHA256 of its EXE at the end of the [release notes](https://github.com/jens-duttke/usage-monitor-for-claude/releases). Compare it against your download:
+**Check that you have the authentic file.** The EXE is code signed: open its *Properties* and look at the *Digital Signatures* tab, which must name **Jens Duttke**. Each release additionally lists the SHA256 of its EXE at the end of the [release notes](https://github.com/jens-duttke/usage-monitor-for-claude/releases). Compare it against your download:
 
 ```powershell
 Get-FileHash UsageMonitorForClaude.exe -Algorithm SHA256
@@ -63,6 +63,8 @@ A matching hash means the file is exactly the one published here, including the 
 **Where the warning comes from.** The app is a Python program shipped as a single portable EXE built with [PyInstaller](https://pyinstaller.org/). Such a bundle unpacks itself into a temporary directory on startup and runs the interpreter from there. That is what a self-extracting packer does, and malware is built with the same tool, so heuristic engines react to the packaging rather than to the program.
 
 The detection names say as much. In `Trojan:Win32/Wacatac.B!ml` the `!ml` suffix means a machine-learning model produced the verdict instead of a signature match, and `Wacatac` is a generic bucket for "suspicious, unidentified". How widespread a file already is counts too, and a release published yesterday is nowhere - which is why the identical file is often rated clean a few weeks later.
+
+The signature does not end this. It gives Windows a publisher to name instead of "unknown", and it lets reputation build up on the certificate across releases rather than starting from zero with every new file - but a heuristic engine still reacts to the packaging, and a certificate counts for no more reputation than it has already collected.
 
 Chrome does not add a second opinion. It passes every downloaded executable to the antivirus installed on your machine and shows you that verdict, so the browser message and the scanner alert are one detection, not two.
 
@@ -87,7 +89,7 @@ Chrome does not add a second opinion. It passes every downloaded executable to t
 
 ## Quick Start
 
-**No Python required.** Download the latest [**UsageMonitorForClaude.exe**](https://github.com/jens-duttke/usage-monitor-for-claude/releases/latest), place it wherever you like, and run it. To remove, disable "Start at login" in the context menu first (if enabled), then delete the file.
+**No Python required.** Download the latest [**UsageMonitorForClaude.exe**](https://github.com/jens-duttke/usage-monitor-for-claude/releases/latest), place it wherever you like, and run it. The EXE is code signed, so Windows names *Jens Duttke* as its publisher. To remove, disable "Start at login" in the context menu first (if enabled), then delete the file.
 
 Or install it from [WinGet](https://learn.microsoft.com/windows/package-manager/), where every release is published automatically:
 
@@ -266,6 +268,8 @@ python build.py
 
 Produces `dist/UsageMonitorForClaude.exe` (~12.5 MB), a single-file executable that bundles Python and all dependencies.
 
+Your own build is unsigned. To sign it, install the Windows SDK signing tools and put a `signing.env` next to `build.py` with `SIGNING_THUMBPRINT` (a code signing certificate in your Windows certificate store) and `SIGNING_TIMESTAMP_URL`. Add `SIGNING_TIMESTAMP_FALLBACK_URL` to have a second timestamp server tried when the first one does not answer. The build then signs the executable and verifies the result, and a failure of either stops it. If the certificate sits on a hardware token, the build stops partway through until you enter the PIN.
+
 There is no equivalent Linux build: PyInstaller cannot reliably bundle GTK and WebKit, so the app is
 run from source there.
 
@@ -287,23 +291,38 @@ This starts a local server and opens the dev preview in your default browser. Us
 
 ### Create a Release
 
-1. Update dependencies: `pip install --upgrade -r requirements.txt`
-2. Update `__version__` in [`usage_monitor_for_claude/__init__.py`](usage_monitor_for_claude/__init__.py) and the version in [`version_info.py`](version_info.py) (`filevers`, `prodvers`, `FileVersion`, `ProductVersion`)
-3. Update `_FALLBACK_USER_AGENT` in [`usage_monitor_for_claude/api.py`](usage_monitor_for_claude/api.py) to the current Claude Code version
-4. In [`CHANGELOG.md`](CHANGELOG.md), rename `## [Unreleased]` to `## [1.x.x] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` section above it
-5. Run the test suite: `python -m unittest discover -s tests`
-6. Smoke test: `python -m usage_monitor_for_claude` - verify tray icon, popup, and settings
-7. Build the EXE with `python build.py`
-8. Smoke test: `dist\UsageMonitorForClaude.exe` - verify tray icon, popup, and settings
-9. Stage the changes from steps 2 to 4
-10. Commit, tag, push, and publish:
+**Before touching a file:** run `git fetch origin` and `git rev-list --left-right --count origin/main...HEAD` - anything other than `0` on the left means the remote has commits you do not have. Make sure the working tree is clean and the test suite is green. On a stale tree the rolled changelog omits whatever was pushed meanwhile, and the tag describes something you never built.
 
-   ```bash
-   git commit -m "Release v1.x.x"
-   git tag v1.x.x
-   git push origin main v1.x.x
-   gh release create v1.x.x dist/UsageMonitorForClaude.exe --title "v1.x.x" --notes "<release notes from CHANGELOG.md, followed by a [README for this version](https://github.com/jens-duttke/usage-monitor-for-claude/blob/v1.x.x/README.md) link>"
+1. Update dependencies: `pip install --upgrade -r requirements.txt`
+2. Update `__version__` in [`usage_monitor_for_claude/__init__.py`](usage_monitor_for_claude/__init__.py) and the version in [`version_info.py`](version_info.py) (all four fields: `filevers`, `prodvers`, `FileVersion`, `ProductVersion`)
+3. Update `_FALLBACK_USER_AGENT` in [`usage_monitor_for_claude/api.py`](usage_monitor_for_claude/api.py) to the current Claude Code version
+4. In [`CHANGELOG.md`](CHANGELOG.md), rename `## [Unreleased]` to `## [1.x.x] - YYYY-MM-DD`, add a fresh empty `## [Unreleased]` section above it, and update both compare links
+5. Run the test suite again, now against the bumped tree: `python -m unittest discover -s tests`
+6. Smoke test from source: `python -m usage_monitor_for_claude` - verify tray icon, popup, and settings
+7. Build the EXE: `python build.py`. If a signing certificate is configured, the run waits for the token PIN partway through
+8. Read the version back out of the artifact - this is what catches an EXE left over from an earlier build:
+
+   ```powershell
+   (Get-Item dist\UsageMonitorForClaude.exe).VersionInfo | Select-Object FileVersion, ProductVersion
    ```
+
+   Both must read `1.x.x.0`.
+9. Smoke test the EXE: `dist\UsageMonitorForClaude.exe` - verify tray icon, popup, and settings
+10. Write the release notes to a file: the new `CHANGELOG.md` section, followed by a `[Full changelog](<compare-url>)` link and a `[README for this version](https://github.com/jens-duttke/usage-monitor-for-claude/blob/v1.x.x/README.md)` link. Pass them with `--notes-file` - the entries contain backticks, which PowerShell treats as escape characters inside `--notes "..."`
+11. Stage the changes from steps 2 to 4, then publish. The commit has to land before the tag, and the WinGet submission needs a current fork:
+
+    ```powershell
+    gh api -X POST repos/jens-duttke/winget-pkgs/merge-upstream -f branch=master
+    git commit -m "chore: release v1.x.x"
+    git push origin main
+    git tag v1.x.x
+    git push origin v1.x.x
+    "`n**SHA256 of UsageMonitorForClaude.exe:** $((Get-FileHash dist/UsageMonitorForClaude.exe -Algorithm SHA256).Hash)" | Add-Content <notes-file>
+    gh release create v1.x.x dist/UsageMonitorForClaude.exe --title "v1.x.x" --notes-file <notes-file>
+    ```
+
+    The SHA256 is appended here rather than written into the notes file, so it is always the hash of the artifact actually being uploaded.
+12. Publishing submits the version to WinGet. Nothing reports a failure of that workflow, so check it: `gh run list --workflow winget.yml --limit 1`. A failed run needs no new release - once the cause is fixed, `gh workflow run winget.yml -f release-tag=v1.x.x` retries the submission
 
 </details>
 
