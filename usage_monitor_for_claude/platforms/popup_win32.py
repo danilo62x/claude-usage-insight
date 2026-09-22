@@ -17,7 +17,7 @@ import ctypes.wintypes
 import threading
 from typing import Any, Callable
 
-__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url']
+__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url', 'set_panel_opacity']
 
 # Extra ``webview.create_window`` options for this platform.  A non-resizable
 # window is what keeps the frameless popup from being dragged by its edges.
@@ -28,6 +28,40 @@ WINDOW_KWARGS = {'resizable': False, 'shadow': False}
 # frame), and resizing it is the whole point.  ``WS_EX_TOOLWINDOW`` is what
 # turns that frame into a thin floating one without a taskbar button.
 PANEL_WINDOW_KWARGS = {'resizable': True, 'frameless': False, 'on_top': False}
+
+def set_panel_opacity(window: Any, alpha: float) -> bool:
+    """Make the panel translucent, so it can sit over another application.
+
+    ``WS_EX_LAYERED`` has to be on the window before the alpha means anything;
+    it is the same mechanism the popup uses to stay invisible while its height
+    is measured, applied here for a value the user picked.
+
+    Parameters
+    ----------
+    alpha : float
+        0.0 to 1.0.  Fully opaque removes the layered style again, because a
+        layered window is composited differently and there is no reason to pay
+        for that when it is not translucent.
+
+    Returns
+    -------
+    bool
+        True when the opacity was applied.
+    """
+    try:
+        hwnd = window.native.Handle.ToInt32()
+        ex_style = ctypes.windll.user32.GetWindowLongW(hwnd, _GWL_EXSTYLE)
+        if alpha >= 1.0:
+            ctypes.windll.user32.SetWindowLongW(hwnd, _GWL_EXSTYLE, ex_style & ~_WS_EX_LAYERED)
+            return True
+        ctypes.windll.user32.SetWindowLongW(hwnd, _GWL_EXSTYLE, ex_style | _WS_EX_LAYERED)
+        ctypes.windll.user32.SetLayeredWindowAttributes(
+            hwnd, 0, int(max(0.25, min(1.0, alpha)) * 255), _LWA_ALPHA,
+        )
+        return True
+    except Exception:
+        return False
+
 
 def apply_panel_window_style(window: Any) -> bool:
     """Make *window* a floating tool window with no taskbar button.

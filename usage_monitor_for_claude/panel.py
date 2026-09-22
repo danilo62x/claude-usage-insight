@@ -29,10 +29,10 @@ import webview  # type: ignore[import-untyped]  # no type stubs available
 
 from . import __version__
 from .claude_cli import find_installations
-from .formatting import field_period, popup_label
+from .formatting import divider_positions, elapsed_pct, field_period, popup_label, time_until
 from .i18n import T
 from .instance_id import effective_config_dir
-from .platforms.popup import PANEL_WINDOW_KWARGS, apply_panel_window_style, popup_url
+from .platforms.popup import PANEL_WINDOW_KWARGS, apply_panel_window_style, popup_url, set_panel_opacity
 from .sessions import index, queries
 from .settings import BG
 
@@ -42,8 +42,13 @@ _STATE_FILENAME = 'usage-monitor-panel.json'
 # Kept off the validated settings file on purpose: geometry is state the window
 # writes on every move, not configuration a user edits, and mixing the two would
 # make the settings file churn.
-_DEFAULT_GEOMETRY = {'width': 1100, 'height': 720, 'x': None, 'y': None}
+_DEFAULT_GEOMETRY = {
+    'width': 1100, 'height': 720, 'x': None, 'y': None,
+    'expanded_width': 1100, 'compact': False, 'on_top': False, 'opacity': 1.0,
+}
 _MIN_SIZE = (760, 520)
+# Just the usage sidebar plus its padding - the width the panel collapses to.
+_COMPACT_WIDTH = 270
 
 __all__ = ['UsagePanel']
 
@@ -71,12 +76,19 @@ def load_geometry() -> dict[str, Any]:
     if not isinstance(stored, dict):
         return geometry
 
-    for key in ('width', 'height', 'x', 'y'):
+    for key in ('width', 'height', 'x', 'y', 'expanded_width'):
         value = stored.get(key)
         if isinstance(value, (int, float)):
             geometry[key] = int(value)
 
-    geometry['width'] = max(_MIN_SIZE[0], int(geometry['width']))
+    for key in ('compact', 'on_top'):
+        if isinstance(stored.get(key), bool):
+            geometry[key] = stored[key]
+    if isinstance(stored.get('opacity'), (int, float)):
+        geometry['opacity'] = float(stored['opacity'])
+
+    minimum = _COMPACT_WIDTH if geometry['compact'] else _MIN_SIZE[0]
+    geometry['width'] = max(minimum, int(geometry['width']))
     geometry['height'] = max(_MIN_SIZE[1], int(geometry['height']))
     return geometry
 
@@ -156,15 +168,26 @@ class _PanelApi:
             if not isinstance(data, dict) or data.get('utilization') is None:
                 continue
             period = field_period(field)
-            resets_at = _reset_epoch(data.get('resets_at'))
+            resets_iso = data.get('resets_at') or ''
+            resets_at = _reset_epoch(resets_iso)
             if not period or resets_at is None:
                 continue
+
+            utilization = float(data.get('utilization') or 0)
+            time_pct = elapsed_pct(resets_iso, period)
             windows.append({
                 'field': field,
                 'label': popup_label(field),
-                'utilization': float(data.get('utilization') or 0),
+                'utilization': utilization,
                 'resets_at': resets_at,
+                'reset_text': time_until(resets_iso),
                 'hours': period / 3600,
+                # Same three as the tray popup, so a bar means the same thing in
+                # both places: how far the period has run, where its hour or day
+                # boundaries fall, and whether usage is ahead of the clock.
+                'marker_rel': (max(0.0, min(1.0, time_pct / 100)) if time_pct is not None else None),
+                'dividers': divider_positions(resets_iso, period),
+                'warn': utilization >= 100 or (time_pct is not None and utilization > time_pct),
             })
         windows.sort(key=lambda w: w['hours'])
 
@@ -224,9 +247,22 @@ class _PanelApi:
 
     # -- window -------------------------------------------------------------
 
+    def set_window_mode(self, compact: bool, on_top: bool, opacity: float) -> dict[str, Any]:
+        """Apply and remember the floating-window options.
+
+        Compact shrinks the window to the usage sidebar, which is what makes it
+        usable as an always-on-top strip over another application; expanding
+        restores the size the window had before it was collapsed.
+        """
+        return self._panel.set_window_mode(bool(compact), bool(on_top), float(opacity))
+
     def report_geometry(self, width: int, height: int, x: int, y: int) -> None:
-        """Store the window geometry reported by the page."""
-        save_geometry({'width': int(width), 'height': int(height), 'x': int(x), 'y': int(y)})
+        """Store the window geometry reported by the page.
+
+        Merged into the stored state rather than replacing it, so a resize does
+        not drop the mode flags the page is not reporting.
+        """
+        self._panel.report_geometry(int(width), int(height), int(x), int(y))
 
     def open_url(self, url: str) -> None:
         """Open *url* in the default browser."""
@@ -246,11 +282,12 @@ class UsagePanel:
         self.app = app
         self._closed = threading.Event()
 
-        geometry = load_geometry()
+        self._geometry = load_geometry()
+        geometry = self._geometry
         kwargs: dict[str, Any] = {
             'width': geometry['width'],
             'height': geometry['height'],
-            'min_size': _MIN_SIZE,
+            'min_size': (_COMPACT_WIDTH, 320),
             'background_color': BG,
             'js_api': _PanelApi(self),
             **PANEL_WINDOW_KWARGS,
@@ -277,16 +314,63 @@ class UsagePanel:
         threading.Thread(target=self._initialise, daemon=True).start()
 
     def _initialise(self) -> None:
-        """Drop the taskbar button, then hand the labels to the page."""
+        """Drop the taskbar button, restore the mode, then hand over the labels."""
         apply_panel_window_style(self._window)
+
+        geometry = self._geometry
+        if geometry['on_top'] or geometry['opacity'] < 1.0:
+            self.set_window_mode(geometry['compact'], geometry['on_top'], geometry['opacity'])
 
         config = {
             'version': __version__,
             'strings': {key: T[key] for key in T if key.startswith('panel_')},
             'indexed': index.is_indexed(),
             'theme': 'dark',
+            'compact': geometry['compact'],
+            'on_top': geometry['on_top'],
+            'opacity': geometry['opacity'],
         }
         self._window.evaluate_js(f'init({json.dumps(config)})')
+
+    def set_window_mode(self, compact: bool, on_top: bool, opacity: float) -> dict[str, Any]:
+        """Apply the floating-window options and persist them.
+
+        The expanded width is remembered separately from the current one, so
+        collapsing and expanding returns the window to the size it had rather
+        than to the default.
+        """
+        geometry = self._geometry
+        was_compact = geometry['compact']
+
+        if compact and not was_compact:
+            geometry['expanded_width'] = geometry['width']
+        width = _COMPACT_WIDTH if compact else max(_MIN_SIZE[0], geometry['expanded_width'])
+
+        geometry['compact'] = compact
+        geometry['on_top'] = on_top
+        geometry['opacity'] = opacity
+        geometry['width'] = width
+
+        try:
+            self._window.resize(width, geometry['height'])
+        except Exception:  # noqa: BLE001 - a failed resize must not lose the setting
+            pass
+
+        try:
+            self._window.on_top = on_top
+        except Exception:  # noqa: BLE001 - unsupported backend keeps the old state
+            pass
+
+        set_panel_opacity(self._window, opacity)
+        save_geometry(geometry)
+        return {'compact': compact, 'on_top': on_top, 'opacity': opacity, 'width': width}
+
+    def report_geometry(self, width: int, height: int, x: int, y: int) -> None:
+        """Merge a reported size and position into the stored state."""
+        self._geometry.update({'width': width, 'height': height, 'x': x, 'y': y})
+        if not self._geometry['compact']:
+            self._geometry['expanded_width'] = width
+        save_geometry(self._geometry)
 
     def _on_closed(self) -> None:
         """Release the thread blocked in ``__init__``."""

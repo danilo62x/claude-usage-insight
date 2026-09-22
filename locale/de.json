@@ -116,5 +116,9 @@
     "panel_advice_long": "Usually a loop or a background session nobody closed. Continuous usage adds up quietly - make sure it is intentional.",
     "panel_tbl_skills": "Skills",
     "panel_tbl_subagents": "Subagents",
-    "panel_tbl_mcp": "MCP servers"
+    "panel_tbl_mcp": "MCP servers",
+    "panel_collapse": "Collapse to the usage bars",
+    "panel_expand": "Expand",
+    "panel_on_top": "Keep on top of other windows",
+    "panel_opacity": "Opacity"
 }

@@ -20,6 +20,7 @@
     --row: rgba(255, 255, 255, 0.04);
     --row-strong: rgba(255, 255, 255, 0.08);
     --grid: rgba(255, 255, 255, 0.07);
+    --marker: #ffffff;
 }
 
 :root[data-theme="light"] {
@@ -35,6 +36,7 @@
     --row: rgba(0, 0, 0, 0.03);
     --row-strong: rgba(0, 0, 0, 0.07);
     --grid: rgba(0, 0, 0, 0.09);
+    --marker: #11141a;
 }
 
 * { box-sizing: border-box; }
@@ -287,9 +289,34 @@ figcaption {
 }
 
 .panel .quota-bar { height: 8px; margin-bottom: 12px; }
-.quota-bar > span { display: block; height: 100%; background: var(--accent); }
-.quota-bar.warn > span { background: var(--warn); }
-.quota-bar.danger > span { background: var(--danger); }
+.quota-bar { position: relative; }
+.quota-bar .bar-fill { display: block; height: 100%; background: var(--accent); }
+.quota-bar.warn .bar-fill { background: var(--danger); }
+
+/* The period's own boundaries - hour marks on a 5h bar, day marks on a weekly
+   one - so a filled bar can be read against where the period actually is. */
+.quota-bar .bar-divider {
+    position: absolute;
+    top: 1px;
+    bottom: 1px;
+    width: 2px;
+    background: var(--bg);
+    opacity: 0.55;
+    z-index: 2;
+}
+
+/* How much of the period has elapsed.  Usage to the left of it is ahead of the
+   clock, which is what turns the bar red. */
+.quota-bar .bar-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--marker);
+    box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.35);
+    z-index: 3;
+    transition: left 1s linear;
+}
 
 .versions {
     margin-top: 16px;
@@ -314,3 +341,37 @@ figcaption {
 .trait-pct { color: var(--fg-heading); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .trait-title { margin-left: 8px; color: var(--fg-heading); }
 .trait-advice { margin-top: 4px; color: var(--fg-dim); font-size: 12px; }
+
+
+/* ---- compact mode ---- */
+
+/* Collapsed to the usage sidebar alone, which is what makes the window usable
+   as an always-on-top strip over another application. */
+body.compact main,
+body.compact .tabs,
+body.compact #range,
+body.compact #refreshBtn,
+body.compact #status,
+body.compact footer,
+body.compact #versionList { display: none; }
+
+body.compact aside#usageBar {
+    flex: 1 1 auto;
+    border-left: 0;
+    padding: 10px 12px;
+}
+
+body.compact header { padding: 6px 10px; justify-content: flex-end; }
+body.compact .quota { margin-bottom: 12px; }
+
+#opacity {
+    width: 68px;
+    accent-color: var(--accent);
+    background: transparent;
+    cursor: pointer;
+}
+
+.ghost.icon.on {
+    border-color: var(--accent);
+    color: var(--accent);
+}

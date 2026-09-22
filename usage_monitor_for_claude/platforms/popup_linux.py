@@ -25,7 +25,7 @@ from __future__ import annotations
 import threading
 from typing import Any, Callable
 
-__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url']
+__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url', 'set_panel_opacity']
 
 # Extra ``webview.create_window`` options for this platform.  GTK ignores
 # ``resize()`` on a non-resizable window, so the content-driven height would
@@ -44,6 +44,20 @@ _WATCH_HEARTBEAT = 2.0
 
 # Escape, as reported by Gdk key events.
 _KEY_ESCAPE = 0xFF1B
+
+
+def set_panel_opacity(window: Any, alpha: float) -> bool:
+    """Make the panel translucent.
+
+    Honoured only where a compositor is running; without one GTK reports
+    success and the window stays opaque, which is why the return value means
+    the call was made rather than that it had an effect.
+    """
+    try:
+        window.native.set_opacity(max(0.25, min(1.0, alpha)))
+        return True
+    except Exception:
+        return False
 
 
 def apply_panel_window_style(window: Any) -> bool:

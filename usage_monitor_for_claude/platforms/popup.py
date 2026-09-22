@@ -13,8 +13,8 @@ from __future__ import annotations
 import sys
 
 if sys.platform == 'win32':
-    from .popup_win32 import PANEL_WINDOW_KWARGS, WINDOW_KWARGS, PopupHost, apply_panel_window_style, popup_url
+    from .popup_win32 import PANEL_WINDOW_KWARGS, WINDOW_KWARGS, PopupHost, apply_panel_window_style, popup_url, set_panel_opacity
 else:
-    from .popup_linux import PANEL_WINDOW_KWARGS, WINDOW_KWARGS, PopupHost, apply_panel_window_style, popup_url
+    from .popup_linux import PANEL_WINDOW_KWARGS, WINDOW_KWARGS, PopupHost, apply_panel_window_style, popup_url, set_panel_opacity
 
-__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url']
+__all__ = ['PANEL_WINDOW_KWARGS', 'WINDOW_KWARGS', 'PopupHost', 'apply_panel_window_style', 'popup_url', 'set_panel_opacity']

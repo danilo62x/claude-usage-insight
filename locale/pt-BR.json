@@ -116,5 +116,9 @@
     "panel_advice_long": "Normalmente é um loop ou uma sessão de fundo que ninguém fechou. Uso contínuo soma em silêncio - confirme se é intencional.",
     "panel_tbl_skills": "Skills",
     "panel_tbl_subagents": "Subagentes",
-    "panel_tbl_mcp": "Servidores MCP"
+    "panel_tbl_mcp": "Servidores MCP",
+    "panel_collapse": "Reduzir para as barras de uso",
+    "panel_expand": "Aumentar",
+    "panel_on_top": "Manter sobre as outras janelas",
+    "panel_opacity": "Opacidade"
 }
