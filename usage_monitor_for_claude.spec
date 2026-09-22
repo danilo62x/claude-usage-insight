@@ -16,6 +16,12 @@ a = Analysis(
         ('usage_monitor_for_claude/popup/popup.html', 'usage_monitor_for_claude/popup'),
         ('usage_monitor_for_claude/popup/popup.css', 'usage_monitor_for_claude/popup'),
         ('usage_monitor_for_claude/popup/popup.js', 'usage_monitor_for_claude/popup'),
+        ('usage_monitor_for_claude/panel/panel.html', 'usage_monitor_for_claude/panel'),
+        ('usage_monitor_for_claude/panel/panel.css', 'usage_monitor_for_claude/panel'),
+        ('usage_monitor_for_claude/panel/panel.js', 'usage_monitor_for_claude/panel'),
+        # Chart.js is bundled, not fetched: the app must keep working offline
+        # and must not reach any host other than api.anthropic.com.
+        ('usage_monitor_for_claude/panel/vendor/chart.umd.min.js', 'usage_monitor_for_claude/panel/vendor'),
     ],
     hiddenimports=[
         'usage_monitor_for_claude.platforms.win32',
@@ -50,7 +56,9 @@ a = Analysis(
         'asyncio', 'concurrent',
         'multiprocessing',
         'xml', 'tomllib',
-        'sqlite3',
+        # sqlite3 used to be excluded to keep the EXE small.  The session panel
+        # stores its transcript index in it, so it has to ship now; that costs
+        # roughly 1.5 MB of DLL and extension module.
     ],
     noarchive=False,
 )
