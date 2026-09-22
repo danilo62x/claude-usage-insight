@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Usage Monitor for Claude** is a local desktop application that monitors your Claude API usage.
+**Claude Usage Insight** is a local desktop application that monitors your Claude API usage.
 It runs on Windows and Linux.
 
 ## Data Collection
@@ -47,7 +47,7 @@ you open the session panel from the tray menu:
 **On Windows** no other files are written. Two values are written to the registry, both under
 `HKEY_CURRENT_USER`:
 
-- `Software\Classes\AppUserModelId\JensDuttke.UsageMonitorForClaude` - the display name and icon
+- `Software\Classes\AppUserModelId\DaniloQuinelato.ClaudeUsageInsight` - the display name and icon
   shown in the header of the application's notifications. Re-registered on every start.
 - `Software\Microsoft\Windows\CurrentVersion\Run` - the autostart entry. Written only when you
   enable autostart from the tray menu, removed when you disable it again.
@@ -76,4 +76,4 @@ The application does not integrate with any analytics, tracking, advertising, or
 ## Contact
 
 For questions about this privacy policy, please open an issue at
-https://github.com/jens-duttke/usage-monitor-for-claude/issues
+https://github.com/danilo62x/claude-usage-insight/issues

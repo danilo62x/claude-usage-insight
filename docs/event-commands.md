@@ -50,7 +50,7 @@ On an idle or locked computer the app keeps polling on a slower cadence, and sti
 **Setup:**
 
 1. Download `AgentMonitorForClaude.exe` from the [latest release](https://github.com/jens-duttke/agent-monitor-for-claude/releases/latest).
-2. Place it in the **same folder** as `UsageMonitorForClaude.exe`. Relative paths in event commands resolve against that folder, so no full path is needed.
+2. Place it in the **same folder** as `ClaudeUsageInsight.exe`. Relative paths in event commands resolve against that folder, so no full path is needed.
 3. Add the setting and restart Usage Monitor for Claude via the tray context menu:
 
 ```json

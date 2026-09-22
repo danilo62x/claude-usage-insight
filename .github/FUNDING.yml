@@ -1,1 +1,3 @@
-github: jens-duttke
+# The upstream project this fork is built on has its own sponsor page:
+# https://github.com/sponsors/jens-duttke
+custom: ['https://template.dev.br/doar?template=github']

@@ -43,7 +43,7 @@ DIAGNOSTIC_PACKAGES = ('pywebview', 'PyGObject', 'pystray', 'Pillow', 'requests'
 # XDG autostart: a .desktop file here is launched when the session starts.
 AUTOSTART_DIRECTORY = Path.home() / '.config' / 'autostart'
 AUTOSTART_BASE_NAME = 'usage-monitor-for-claude'
-APPLICATION_NAME = 'Usage Monitor for Claude'
+APPLICATION_NAME = 'Claude Usage Insight'
 
 # Session-bus endpoints. GNOME's Mutter reports idle time even on Wayland,
 # where no X11 equivalent of GetLastInputInfo exists.

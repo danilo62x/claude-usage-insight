@@ -14,7 +14,7 @@ Usage:
     python build.py
 
 Produces:
-    dist/UsageMonitorForClaude.exe
+    dist/ClaudeUsageInsight.exe
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def build() -> None:
     cmd = [sys.executable, '-m', 'PyInstaller', '--clean', '--noconfirm', str(SPEC)]
     subprocess.check_call(cmd, cwd=str(ROOT))
 
-    exe = DIST / 'UsageMonitorForClaude.exe'
+    exe = DIST / 'ClaudeUsageInsight.exe'
     if not exe.exists():
         print('\nBuild failed - EXE not found.')
         sys.exit(1)

@@ -22,8 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A Claude Code CLI installed inside WSL is now detected and listed automatically, instead of needing a `cli_command` entry
+- The application is now called **Claude Usage Insight**, and the executable `ClaudeUsageInsight.exe`. The old and the new build still exclude each other, so an account is never polled twice
+- The GitHub entry in the tray menu now opens this fork's repository
 
-[Show all code changes](https://github.com/jens-duttke/usage-monitor-for-claude/compare/v1.23.0...HEAD)
+### Removed
+
+- The WinGet publication. This fork is distributed through its GitHub releases only
+
+[Show all code changes](https://github.com/danilo62x/claude-usage-insight/commits/main)
 
 ## [1.23.0] - 2026-09-22
 

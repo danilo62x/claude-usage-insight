@@ -8,7 +8,7 @@ The script queries the GitHub Releases API and shows a desktop notification if a
 
 ### 1. Save the script
 
-Save it next to your `UsageMonitorForClaude.exe`, or in the project root when running from source.
+Save it next to your `ClaudeUsageInsight.exe`, or in the project root when running from source.
 
 #### Windows
 
@@ -17,7 +17,7 @@ Save as `check-update.ps1`:
 ```powershell
 $currentVersion = if ($env:USAGE_MONITOR_VERSION) { $env:USAGE_MONITOR_VERSION } else { '0.0.0' }
 
-$releaseUrl = 'https://api.github.com/repos/jens-duttke/usage-monitor-for-claude/releases/latest'
+$releaseUrl = 'https://api.github.com/repos/danilo62x/claude-usage-insight/releases/latest'
 
 try {
     $release = Invoke-RestMethod -Uri $releaseUrl -TimeoutSec 10
@@ -59,7 +59,7 @@ Save as `check-update.sh` and make it executable with `chmod +x check-update.sh`
 set -eu
 
 current="${USAGE_MONITOR_VERSION:-0.0.0}"
-release_api='https://api.github.com/repos/jens-duttke/usage-monitor-for-claude/releases/latest'
+release_api='https://api.github.com/repos/danilo62x/claude-usage-insight/releases/latest'
 
 # Any failure exits quietly - a failed update check must never disturb the app.
 release=$(curl -fsS --max-time 10 "$release_api") || exit 0
@@ -139,7 +139,7 @@ Use the **Restart** option in the tray context menu to load the new settings.
 ## How it works
 
 1. On each configured event, the app launches the script as a background process (no console window, no focus stealing)
-2. The script sends a single HTTPS request to `https://api.github.com/repos/jens-duttke/usage-monitor-for-claude/releases/latest`
+2. The script sends a single HTTPS request to `https://api.github.com/repos/danilo62x/claude-usage-insight/releases/latest`
 3. If the latest release tag is newer than `USAGE_MONITOR_VERSION`, a desktop notification appears
 4. The notification carries the release page - on Windows behind a click, on Linux as a link in the message
 5. If the request fails (no internet, API down, rate-limited), the script exits silently

@@ -111,7 +111,7 @@ def _load_settings() -> dict:
             except (json.JSONDecodeError, ValueError) as exc:
                 show_warning_box(
                     f'Invalid JSON in settings file:\n{path}\n\n{exc}',
-                    'Usage Monitor for Claude - Settings Error',
+                    'Claude Usage Insight - Settings Error',
                 )
                 return {}
             except OSError:
@@ -307,7 +307,7 @@ def _validate(data: dict, path: Path) -> dict:
     if errors:
         show_warning_box(
             f'Invalid values in settings file:\n{path}\n\n' + '\n'.join(errors),
-            'Usage Monitor for Claude - Settings Error',
+            'Claude Usage Insight - Settings Error',
         )
 
     return data

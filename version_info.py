@@ -15,12 +15,12 @@ VSVersionInfo(
             StringTable(
                 '040904B0',  # Lang: US English, Charset: Unicode
                 [
-                    StringStruct('CompanyName', 'Jens Duttke'),
-                    StringStruct('FileDescription', 'Usage Monitor for Claude'),
+                    StringStruct('CompanyName', 'Danilo Quinelato'),
+                    StringStruct('FileDescription', 'Claude Usage Insight'),
                     StringStruct('FileVersion', '1.23.0.0'),
-                    StringStruct('InternalName', 'UsageMonitorForClaude'),
-                    StringStruct('OriginalFilename', 'UsageMonitorForClaude.exe'),
-                    StringStruct('ProductName', 'Usage Monitor for Claude'),
+                    StringStruct('InternalName', 'ClaudeUsageInsight'),
+                    StringStruct('OriginalFilename', 'ClaudeUsageInsight.exe'),
+                    StringStruct('ProductName', 'Claude Usage Insight'),
                     StringStruct('ProductVersion', '1.23.0.0'),
                 ],
             ),

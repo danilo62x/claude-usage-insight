@@ -14,11 +14,16 @@ import re
 import unittest
 from pathlib import Path
 
+from usage_monitor_for_claude.claude_cli import PROJECT_URL
+
 REPOSITORY = Path(__file__).resolve().parent.parent
 README = REPOSITORY / 'README.md'
 ISSUE_TEMPLATE_CONFIG = REPOSITORY / '.github' / 'ISSUE_TEMPLATE' / 'config.yml'
 
-REPOSITORY_URL = 'https://github.com/jens-duttke/usage-monitor-for-claude'
+# Taken from the app rather than spelled out again: the tray menu and the
+# issue template must point at the same repository, and a fork that renames
+# itself should not have to remember this file.
+REPOSITORY_URL = PROJECT_URL
 
 
 def _readme_anchors() -> set[str]:

@@ -156,7 +156,7 @@ class SignTest(unittest.TestCase):
                 mock.patch.object(build, '_signtool', return_value=Path('signtool.exe')), \
                 mock.patch.object(build.subprocess, 'call', side_effect=record), \
                 contextlib.redirect_stdout(io.StringIO()):
-            build._sign(Path('dist') / 'UsageMonitorForClaude.exe')
+            build._sign(Path('dist') / 'ClaudeUsageInsight.exe')
 
 
 class BuildTest(unittest.TestCase):
@@ -168,7 +168,7 @@ class BuildTest(unittest.TestCase):
         # artifact, and a build that prints its success first would hand one
         # over while the signature is still running.
         output = self._build(exe=True)
-        self.assertEqual([path.name for path, _ in self.signed], ['UsageMonitorForClaude.exe'])
+        self.assertEqual([path.name for path, _ in self.signed], ['ClaudeUsageInsight.exe'])
         self.assertNotIn('Build successful', self.signed[0][1])
         self.assertIn('Build successful', output)
 
@@ -182,7 +182,7 @@ class BuildTest(unittest.TestCase):
         with TemporaryDirectory() as base:
             dist = Path(base)
             if exe:
-                (dist / 'UsageMonitorForClaude.exe').write_bytes(b'')
+                (dist / 'ClaudeUsageInsight.exe').write_bytes(b'')
 
             buffer = io.StringIO()
 

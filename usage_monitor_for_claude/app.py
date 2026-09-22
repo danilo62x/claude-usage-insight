@@ -1073,4 +1073,4 @@ class UsageMonitorForClaude:
 
 def crash_log(msg: str) -> None:
     """Show a crash message box (for windowless EXE builds)."""
-    show_error_box(msg, 'Usage Monitor for Claude - Error')
+    show_error_box(msg, 'Claude Usage Insight - Error')

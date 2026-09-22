@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for Usage Monitor for Claude.
+PyInstaller spec file for Claude Usage Insight.
 
 Build:
   pyinstaller usage_monitor_for_claude.spec
@@ -71,7 +71,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='UsageMonitorForClaude',
+    name='ClaudeUsageInsight',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

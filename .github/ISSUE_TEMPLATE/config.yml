@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: The download is flagged by antivirus software
-    url: https://github.com/jens-duttke/usage-monitor-for-claude#antivirus-warnings
+    url: https://github.com/danilo62x/claude-usage-insight#antivirus-warnings
     about: A false positive caused by the way the EXE is packaged. The README explains how to verify that your download is the published file, and what to do about the warning.
-  - name: Feature request or idea
-    url: https://github.com/jens-duttke/usage-monitor-for-claude/discussions/categories/ideas
-    about: Suggest a feature, or upvote and comment on an existing idea. Feature requests are handled in Discussions, not Issues.
+  - name: A problem with the tray icon, the popup or the quota bars
+    url: https://github.com/jens-duttke/usage-monitor-for-claude/issues
+    about: Those come from the upstream project this fork is built on. Report them there, so every fork benefits from the fix.
   - name: Question or usage help
-    url: https://github.com/jens-duttke/usage-monitor-for-claude/discussions
-    about: Ask about setup, configuration, or how something works.
+    url: https://github.com/danilo62x/claude-usage-insight/discussions
+    about: Ask about setup, configuration, or how the session panel works.
