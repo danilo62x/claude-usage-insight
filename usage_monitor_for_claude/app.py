@@ -33,6 +33,7 @@ from .settings import (
 )
 from .formatting import elapsed_pct, field_period, format_credits, format_tooltip, is_active_quota, parse_field_name, popup_label
 from .i18n import T
+from .panel import UsagePanel
 from .popup import UsagePopup
 from .tray_icon import create_icon_image, create_status_image
 
@@ -126,6 +127,11 @@ class UsageMonitorForClaude:
         self._popup_lock = threading.Lock()
         self._popup_open = False
         self._popup_closed_at = 0.0
+        # The panel is a separate window with its own lifetime: unlike the
+        # popup it survives losing focus, so only the open/closed flag is
+        # needed - there is no re-open bounce to debounce.
+        self._panel_lock = threading.Lock()
+        self._panel_open = False
         self._next_poll_time: float | None = None
 
         # Theme state
@@ -143,6 +149,7 @@ class UsageMonitorForClaude:
             title=self._tooltip_prefix + T['loading'],
             menu=pystray.Menu(
                 pystray.MenuItem(T['menu_show'], self.on_show_popup, default=True),
+                pystray.MenuItem(T['menu_panel'], self.on_show_panel),
                 pystray.MenuItem(
                     T['menu_quick_action'], self.on_run_quick_action,
                     visible=self._quick_action_menu_visible,
@@ -196,6 +203,23 @@ class UsageMonitorForClaude:
                 return
             self._popup_open = True
         threading.Thread(target=self._open_popup, daemon=True).start()
+
+    def on_show_panel(self, icon: Any = None, item: Any = None) -> None:
+        """Open the session panel, or focus it when it is already open."""
+        with self._panel_lock:
+            if self._panel_open:
+                return
+            self._panel_open = True
+        threading.Thread(target=self._open_panel, daemon=True).start()
+
+    def _open_panel(self) -> None:
+        """Run the panel window, releasing the open flag when it closes."""
+        try:
+            UsagePanel(self)
+        except Exception:  # noqa: BLE001 - a panel crash must not kill the tray
+            crash_log(traceback.format_exc())
+        finally:
+            self._panel_open = False
 
     def on_toggle_autostart(self, icon: Any = None, item: Any = None) -> None:
         set_autostart(not is_autostart_enabled())

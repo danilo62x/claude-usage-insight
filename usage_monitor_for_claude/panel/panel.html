@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<header>
+    <nav class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab active" data-tab="sessions" id="tabSessions"></button>
+        <button type="button" role="tab" class="tab" data-tab="charts" id="tabCharts"></button>
+        <button type="button" role="tab" class="tab" data-tab="quotas" id="tabQuotas"></button>
+    </nav>
+    <div class="header-right">
+        <span id="status" class="status"></span>
+        <label class="range">
+            <select id="range"></select>
+        </label>
+        <button type="button" id="refreshBtn" class="ghost"></button>
+    </div>
+</header>
+
+<main>
+    <!-- Sessions -->
+    <section id="panelSessions" class="panel" aria-labelledby="tabSessions">
+        <div class="table-wrap">
+            <table id="sessionsTable">
+                <thead>
+                    <tr>
+                        <th data-sort="weighted" class="num sorted" id="thWeighted"></th>
+                        <th data-sort="raw" class="num" id="thRaw"></th>
+                        <th data-sort="turns" class="num" id="thTurns"></th>
+                        <th data-sort="ctx_avg" class="num" id="thCtxAvg"></th>
+                        <th data-sort="ctx_peak" class="num" id="thCtxPeak"></th>
+                        <th data-sort="sub_weighted" class="num" id="thSub"></th>
+                        <th data-sort="first_ts" id="thWhen"></th>
+                        <th data-sort="project" id="thProject"></th>
+                        <th id="thTopic"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p class="empty" id="sessionsEmpty" hidden></p>
+        </div>
+    </section>
+
+    <!-- Charts -->
+    <section id="panelCharts" class="panel" hidden aria-labelledby="tabCharts">
+        <div class="grid">
+            <figure class="card wide">
+                <figcaption id="capDaily"></figcaption>
+                <div class="canvas-box"><canvas id="chartDaily"></canvas></div>
+            </figure>
+            <figure class="card">
+                <figcaption id="capHourly"></figcaption>
+                <div class="canvas-box"><canvas id="chartHourly"></canvas></div>
+            </figure>
+            <figure class="card">
+                <figcaption id="capProject"></figcaption>
+                <div class="canvas-box"><canvas id="chartProject"></canvas></div>
+            </figure>
+            <figure class="card wide">
+                <figcaption>
+                    <span id="capCurve"></span>
+                    <select id="curveSession" class="inline-select"></select>
+                </figcaption>
+                <div class="canvas-box"><canvas id="chartCurve"></canvas></div>
+                <p class="hint" id="hintCurve"></p>
+            </figure>
+        </div>
+    </section>
+
+    <!-- Quotas -->
+    <section id="panelQuotas" class="panel" hidden aria-labelledby="tabQuotas">
+        <div id="quotaList"></div>
+        <p class="hint" id="hintQuota"></p>
+    </section>
+</main>
+
+<footer>
+    <span id="footVersion" class="dim"></span>
+    <span id="footWeights" class="dim"></span>
+</footer>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
